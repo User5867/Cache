@@ -1,0 +1,20 @@
+﻿using CacheLibary.Interfaces;
+using CacheLibary.Models;
+using SQLite;
+using SQLiteNetExtensions.Attributes;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace CacheLibary.DAOs
+{
+  internal class Key
+  {
+    [PrimaryKey]
+    [TextBlob(nameof(ObjectKeyBlob))]
+    public object ObjectKey { get; set; }
+    public string ObjectKeyBlob { get; set; }
+    [ManyToMany(typeof(KeyValue))]
+    public List<Value> Values { get; set; }
+  }
+}
