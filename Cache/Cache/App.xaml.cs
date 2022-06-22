@@ -1,4 +1,10 @@
-﻿using System;
+﻿using CacheHelper;
+using Newtonsoft.Json;
+using SysPro.PSM.LocalStorage;
+using System;
+using System.Collections.Concurrent;
+using System.Configuration;
+using System.Threading.Tasks;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -9,8 +15,11 @@ namespace Cache
     public App()
     {
       InitializeComponent();
-
-      MainPage = new MainPage();
+      Task.Run(async () =>
+      {
+        await CacheHelper.CacheHelper.InitApp();
+        MainPage = new MainPage();
+      });
     }
 
     protected override void OnStart()

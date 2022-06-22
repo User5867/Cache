@@ -21,7 +21,15 @@ namespace Cache
       IMaterialCache materialCache = cacheManager.GetCache<IMaterialCache>();
       _ = Task.Run(async () =>
       {
-        Material m = await materialCache.GetMaterialBySku("test");
+        try
+        {
+        Material m = await materialCache.GetMaterialBySku("9300806190006");
+        m = await materialCache.GetMaterialBySku("9300806190006");
+        }
+        catch(Exception e)
+        {
+
+        }
       });
       
     }

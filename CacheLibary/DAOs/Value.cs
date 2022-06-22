@@ -8,10 +8,12 @@ namespace CacheLibary.DAOs
 {
   internal class Value
   {
-    [TextBlob(nameof(ObjectBlob))]
     [PrimaryKey]
+    public int Id { get; set; }
+    public int Hashcode { get; set; }
+    [TextBlob(nameof(ObjectBlob))]
     public object Object { get; set; }
-    [ManyToMany(typeof(KeyValue))]
+    [ManyToMany(typeof(KeyValue), CascadeOperations = CascadeOperation.CascadeRead)]
     public List<Key> Keys { get; set; }
     public string ObjectBlob { get; set; }
   }

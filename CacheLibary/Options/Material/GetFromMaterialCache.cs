@@ -12,4 +12,10 @@ namespace CacheLibary.Options.Material
     {
     }
   }
+  internal abstract class GetCollectionFromMaterialCache<K> : BaseGetCollectionFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, K>
+  {
+    internal GetCollectionFromMaterialCache(IOptions options) : base(options)
+    {
+    }
+  }
 }

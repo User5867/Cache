@@ -8,6 +8,7 @@ using Cache.Droid;
 using CacheLibary.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Xamarin.Forms;
@@ -20,7 +21,7 @@ namespace Cache.Droid
     private string _localFilePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
     public string GetLocalFilePath(string path)
     {
-      return _localFilePath + path;
+      return Path.Combine(_localFilePath, path);
     }
   }
 }

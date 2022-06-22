@@ -24,6 +24,9 @@
     <Reference Include="SysPro.PSM.Endpoints">
       <HintPath>..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.Endpoints.dll</HintPath>
     </Reference>
+    <Reference Include="SysPro.PSM.LocalStorage">
+      <HintPath>..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.LocalStorage.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

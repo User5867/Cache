@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cache.iOS", "Cache\Cache.iO
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cache", "Cache\Cache\Cache.csproj", "{BD553AF7-3CB1-4FDB-BD80-EFFF0557FB6C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CacheLibary", "CacheLibary\CacheLibary.csproj", "{4B15C87E-72CE-4EF4-B6DC-E95D7C53671A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CacheLibary", "CacheLibary\CacheLibary.csproj", "{4B15C87E-72CE-4EF4-B6DC-E95D7C53671A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

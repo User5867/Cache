@@ -8,10 +8,13 @@ namespace CacheLibary.DAOs
 {
   internal class Expiration
   {
-    [ForeignKey(typeof(Value))]
-    public object Object { get; set; }
+    [TextBlob(nameof(KeyBlob))]
+    public object Key { get; set; }
+    [ForeignKey(typeof(Key))]
+    public string KeyBlob { get; set; }
     [OneToOne]
     public Value Value { get; set; }
     public DateTime Experation { get; set; }
+    public DateTime LastAccess { get; set; }
   }
 }

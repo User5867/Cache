@@ -11,10 +11,12 @@ namespace CacheLibary.DAOs
   internal class Key
   {
     [PrimaryKey]
+    public int Id { get; set; }
+    public int Hashcode { get; set; }
     [TextBlob(nameof(ObjectKeyBlob))]
     public object ObjectKey { get; set; }
     public string ObjectKeyBlob { get; set; }
-    [ManyToMany(typeof(KeyValue))]
+    [ManyToMany(typeof(KeyValue), CascadeOperations = CascadeOperation.CascadeRead)]
     public List<Value> Values { get; set; }
   }
 }

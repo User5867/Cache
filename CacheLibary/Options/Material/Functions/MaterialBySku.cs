@@ -18,14 +18,6 @@ namespace CacheLibary.Options.Material.Functions
 
     public override async Task<SysPro.Client.WebApi.Generated.Sprinter.Material> Get(string key)
     {
-      try
-      {
-        return await Get(new MaterialKey<string>(key, "sku"));
-      }
-      catch (Exception e)
-      {
-
-      }
       return await Get(new MaterialKey<string>(key, "sku"));
     }
     protected override async Task GetFromService()

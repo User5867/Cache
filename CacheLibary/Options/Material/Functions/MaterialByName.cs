@@ -7,13 +7,13 @@ using System.Threading.Tasks;
 
 namespace CacheLibary.Options.Material.Functions
 {
-  internal class MaterialByName : GetFromMaterialCache<string>
+  internal class MaterialByName : GetCollectionFromMaterialCache<string>
   {
     public MaterialByName(IOptions options) : base(options)
     {
     }
 
-    public override async Task<SysPro.Client.WebApi.Generated.Sprinter.Material> Get(string key)
+    public override async Task<ICollection<SysPro.Client.WebApi.Generated.Sprinter.Material>> Get(string key)
     {
       return await Get(new MaterialKey<string>(key, "name"));
     }

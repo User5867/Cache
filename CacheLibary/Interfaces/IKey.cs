@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CacheLibary.Interfaces
 {
-  internal interface IKey<K>
+  internal interface IKey<K> : IEquatable<IKey<K>>
   {
     string KeyIdentifier { get; }
     K KeyValue { get; }

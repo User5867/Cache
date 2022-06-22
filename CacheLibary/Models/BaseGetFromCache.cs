@@ -21,11 +21,11 @@ namespace CacheLibary.Models
     }
     protected async Task<T> Get(IKey<K> key)
     {
+      ClearPropertys();
       Key = key;
       GetFromMemory();
       await GetFromPersistentAndSave();
       await GetFromServiceAndSave();
-      ClearPropertys();
       return Value;
     }
 
@@ -36,11 +36,11 @@ namespace CacheLibary.Models
     }
     protected bool ValueIsSet()
     {
-      return !IsDefault(Value);
+      return !IsNull(Value);
     }
-    private bool IsDefault(T t)
+    private bool IsNull(T t)
     {
-      return t.Equals(default(T));
+      return t == null;
     }
     protected void GetFromMemory()
     {
