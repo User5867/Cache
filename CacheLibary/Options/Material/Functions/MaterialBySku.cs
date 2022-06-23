@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Autofac;
 using SysPro.PSM.Endpoints;
+using CacheLibary.DAOs.OptionDAOs;
 
 namespace CacheLibary.Options.Material.Functions
 {
@@ -15,7 +16,6 @@ namespace CacheLibary.Options.Material.Functions
     public MaterialBySku(IOptions options) : base(options)
     {
     }
-
     public override async Task<SysPro.Client.WebApi.Generated.Sprinter.Material> Get(string key)
     {
       return await Get(new MaterialKey<string>(key, "sku"));

@@ -1,8 +1,10 @@
-﻿using CacheLibary.Interfaces;
+﻿using CacheLibary.DAOs.OptionDAOs;
+using CacheLibary.Interfaces;
 using CacheLibary.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CacheLibary.Options.Material
 {
@@ -11,6 +13,15 @@ namespace CacheLibary.Options.Material
     internal GetFromMaterialCache(IOptions options) : base(options)
     {
     }
+    //protected override async Task GetFromPersistent()
+    //{
+    //  Value = await PersistentManager.Get<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>(Key);
+    //}
+
+    //protected override void SaveToPersistent()
+    //{
+    //  PersistentManager.Save<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>(Key, Value, Options);
+    //}
   }
   internal abstract class GetCollectionFromMaterialCache<K> : BaseGetCollectionFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, K>
   {

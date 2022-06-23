@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xamarin.Forms.Internals;
 
 namespace CacheLibary.Models
 {
@@ -25,7 +26,7 @@ namespace CacheLibary.Models
       int hash = 13;
       hash = (hash * 17) + KeyIdentifier.GetHashCode();
       hash = (hash * 17) + KeyValue.GetHashCode();
-      hash = (hash * 17) + ObjectType.GetHashCode();
+      hash = (hash * 17) + ObjectType.FullName.GetHashCode();
       return hash;
     }
     public bool Equals(IKey<K> other)

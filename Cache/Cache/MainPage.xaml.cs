@@ -23,8 +23,9 @@ namespace Cache
       {
         try
         {
-        Material m = await materialCache.GetMaterialBySku("9300806190006");
-        m = await materialCache.GetMaterialBySku("9300806190006");
+          //Material m = await materialCache.GetMaterialBySku("9300806190006");
+          Material m = await materialCache.GetMaterialBySku("9332822604687");
+          m = await materialCache.GetMaterialBySku("9300806190006");
         }
         catch(Exception e)
         {

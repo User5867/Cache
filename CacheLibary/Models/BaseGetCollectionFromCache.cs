@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CacheLibary.Models
 {
@@ -9,6 +10,14 @@ namespace CacheLibary.Models
   {
     internal BaseGetCollectionFromCache(IOptions options) : base(options)
     {
+    }
+    protected override Task GetFromPersistent()
+    {
+      return base.GetFromPersistent();
+    }
+    protected override void SaveToPersistent()
+    {
+      base.SaveToPersistent();
     }
   }
 }
