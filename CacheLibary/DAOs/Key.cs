@@ -1,5 +1,4 @@
-﻿using CacheLibary.Interfaces;
-using CacheLibary.Models;
+﻿using CacheLibary.Models;
 using SQLite;
 using SQLiteNetExtensions.Attributes;
 using System;
@@ -14,9 +13,9 @@ namespace CacheLibary.DAOs
     public int Id { get; set; }
     public int Hashcode { get; set; }
     [TextBlob(nameof(ObjectKeyBlob))]
-    public object ObjectKey { get; set; }
+    public Key<object> ObjectKey { get; set; }
     public string ObjectKeyBlob { get; set; }
-    [ManyToMany(typeof(KeyValue), CascadeOperations = CascadeOperation.CascadeRead)]
+    [ManyToMany(typeof(KeyValue))]
     public List<Value> Values { get; set; }
   }
 }

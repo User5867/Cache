@@ -18,11 +18,10 @@ namespace CacheLibary.Models.Functions
     {
       Key k = await KeyFunctions.GetKeyByHashcode(hashcode, key);
       if (k == null)
-      {
         return default;
-      }
-      if (k?.Values?.FirstOrDefault()?.Object is T retVal)
-        return retVal;
+      object o = k?.Values?.FirstOrDefault()?.Object;
+      if (o != null)
+        return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(o.ToString());
       return default;
     }
 
@@ -67,17 +66,52 @@ namespace CacheLibary.Models.Functions
       await _db.InsertWithChildrenAsync(v);
       return v;
     }
-    public static async Task<Value> GetValueByHashcode<T>(int hashcode, T value)
+    public static async Task<D> GetValueByHashcode<D, T>(int hashcode, T value) where D : T
     {
-      int j = 0;
-      Value k = await TryGetValueByIndex(HashFunctions.GetIndexByHash(hashcode, j));
-      while (k != null || (k.Hashcode == hashcode && value.Equals(k.Object)))
-      {
-        j++;
-        k = await TryGetValueByIndex(HashFunctions.GetIndexByHash(hashcode, j));
-      }
-      return k;
+      //int j = 0;
+      //D k = await TryGetValueByIndex<D>(HashFunctions.GetIndexByHash(hashcode, j));
+      //while (k != null || (k.Hashcode == hashcode && value.Equals(k.Object)))
+      //{
+      //  j++;
+      //  k = await TryGetValueByIndex<D>(HashFunctions.GetIndexByHash(hashcode, j));
+      //}
+      //return k;
+      throw new NotImplementedException();
     }
+
+    internal static async Task<ICollection<T>> GetValuesByHashcode<T, K>(int hashcode, IKey<K> key)
+    {
+      Key k = await KeyFunctions.GetKeyByHashcode(hashcode, key);
+      if (k == null)
+        return default;
+      ICollection<T> retVal = new List<T>();
+      foreach (Value value in k.Values)
+      {
+        retVal.Add(Newtonsoft.Json.JsonConvert.DeserializeObject<T>(value.Object.ToString()));
+      }
+      return retVal;
+    }
+
+    internal static async void SaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
+    {
+      Key k = await CreateAndGetKey(key);
+      ICollection<Value> v = await CreateAndGetValues(values);
+      foreach (Value value in v)
+      {
+        AddKeyToValue(k, value);
+      }
+    }
+
+    private static async Task<ICollection<Value>> CreateAndGetValues<T>(ICollection<T> values)
+    {
+      ICollection<Value> retVal = new List<Value>();
+      foreach (T value in values)
+      {
+        retVal.Add(await CreateAndGetValue(value));
+      }
+      return retVal;
+    }
+
     private static async Task<Value> TryGetValueByIndex(int index)
     {
       try
@@ -88,7 +122,7 @@ namespace CacheLibary.Models.Functions
       {
         return null;
       }
-      
+
     }
 
     private static async Task<Value> GetValueByIndex(int index)
@@ -98,12 +132,13 @@ namespace CacheLibary.Models.Functions
 
     private static void AddKeyToValue(Key k, Value v)
     {
-      KeyValue keyValue = new KeyValue() { Key = k.Id, Value = v.Id };
+      KeyValue keyValue = new KeyValue() { KeyId = k.Id, ValueId = v.Id };
       _ = _db.InsertAsync(keyValue);
     }
     private static async Task<Key> CreateAndGetKey<K>(IKey<K> key)
     {
-      Key k = new Key() { ObjectKey = key, Hashcode = KeyFunctions.GetHashcode(key), Id = await KeyFunctions.GetFirstFreeKeyIndex(key) };
+
+      Key k = new Key() { ObjectKey = Key<K>.GetObjectKey(key), Hashcode = KeyFunctions.GetHashcode(key), Id = await KeyFunctions.GetFirstFreeKeyIndex(key) };
       await _db.InsertWithChildrenAsync(k);
       return k;
     }
@@ -116,8 +151,8 @@ namespace CacheLibary.Models.Functions
     {
       KeyValue keyValue = new KeyValue()
       {
-        Value = value.Id,
-        Key = key.Id
+        ValueId = value.Id,
+        KeyId = key.Id
       };
       _ = await _db.InsertAsync(keyValue);
       ExpirationFunctions.UpdateExperation(key, options);

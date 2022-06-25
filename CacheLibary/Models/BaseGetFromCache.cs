@@ -79,7 +79,7 @@ namespace CacheLibary.Models
 
     protected async virtual Task GetFromPersistent()
     {
-      await PersistentManager.Get<T, K>(Key);
+      Value = await PersistentManager.Get<T, K>(Key);
     }
     protected abstract Task GetFromService();
     public abstract Task<T> Get(K key);

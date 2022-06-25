@@ -1,5 +1,8 @@
-﻿using CacheLibary.Interfaces;
+﻿using Autofac;
+using CacheLibary.Interfaces;
 using CacheLibary.Models;
+using SysPro.PSM.DependencyContainer;
+using SysPro.PSM.Endpoints;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,9 +21,19 @@ namespace CacheLibary.Options.Material.Functions
       return await Get(new MaterialKey<string>(key, "name"));
     }
 
-    protected override Task GetFromService()
+    protected override async Task GetFromService()
     {
-      throw new NotImplementedException();
+      var service = DepCon.Scope.Resolve<SysPro.Client.WebApi.Generated.Sprinter.ISPRINTER_Client>();
+      var user = new UserInfoFac<SysPro.Client.WebApi.Generated.Sprinter.UserInfo>().Build();
+      var recordFilter = new FilterFac<SysPro.Client.WebApi.Generated.Sprinter.RecordFilter>();
+      recordFilter.Add("artbez", FilterComparer.Equal, Key.KeyValue);
+      var res = await service.GetMaterialListAsync(new SysPro.Client.WebApi.Generated.Sprinter.GetMaterialListBody()
+      {
+        Userinfo = user,
+        RecordFilter = recordFilter.Build()
+      });
+      if (res.Success)
+        Value = res.MaterialList;
     }
   }
 }

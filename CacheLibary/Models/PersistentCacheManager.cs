@@ -26,7 +26,7 @@ namespace CacheLibary.Models
 
     private PersistentCacheManager()
     {
-      _db = new SQLiteAsyncConnection(DependencyService.Get<IFileHelper>().GetLocalFilePath("cache.db3"), SQLiteOpenFlags.Create | SQLiteOpenFlags.FullMutex | SQLiteOpenFlags.SharedCache | SQLiteOpenFlags.ReadWrite);
+      _db = new SQLiteAsyncConnection(DependencyService.Get<IFileHelper>().GetLocalFilePath("cache.db3"), SQLiteOpenFlags.Create | SQLiteOpenFlags.NoMutex | SQLiteOpenFlags.SharedCache | SQLiteOpenFlags.ReadWrite);
       _ = Task.Run(async () =>
         {
           try
@@ -37,7 +37,7 @@ namespace CacheLibary.Models
               _ = t.CreateTable<Key>();
               _ = t.CreateTable<Expiration>();
               _ = t.CreateTable<KeyValue>();
-              //_ = t.CreateTable<MaterialDAO>();
+              _ = t.CreateTable<MaterialDAO>();
               _tableExists.SetResult(true);
               _isLoading = false;
             });
@@ -55,19 +55,22 @@ namespace CacheLibary.Models
     }
     public async Task<T> Get<T, K>(IKey<K> key)
     {
-      if (_isLoading)
-      {
-        bool t = _tableExists.Task.Result;
-      }
+      CheckTablesCreated();
       int hash = KeyFunctions.GetHashcode(key);
       return await ValueFunctions.GetValueByHashcode<T, K>(hash, key);
     }
-    public async Task<T> Get<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
+
+    private void CheckTablesCreated()
     {
       if (_isLoading)
       {
-        bool t = _tableExists.Task.Result;
+        _ = _tableExists.Task.Result;
       }
+    }
+
+    public async Task<T> Get<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
+    {
+      CheckTablesCreated();
       int hash = KeyFunctions.GetHashcode(key);
       return await ValueFunctions.GetValueByHashcode<T, D, K>(hash, key);
     }
@@ -77,18 +80,21 @@ namespace CacheLibary.Models
       ValueFunctions.SaveNewValue(key, value, options);
     }
 
-    public Task<ICollection<T>> GetCollection<T, K>(IKey<K> key)
+    public async Task<ICollection<T>> GetCollection<T, K>(IKey<K> key)
     {
-      throw new NotImplementedException();
+      CheckTablesCreated();
+      int hash = KeyFunctions.GetHashcode(key);
+      return await ValueFunctions.GetValuesByHashcode<T, K>(hash, key);
     }
 
     public void SaveCollection<T, K>(IKey<K> key, ICollection<T> values, IOptions options)
     {
-      throw new NotImplementedException();
+      ValueFunctions.SaveNewValues(key, values, options);
     }
 
     public Task<ICollection<T>> GetCollection<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
     {
+      
       throw new NotImplementedException();
     }
 

@@ -20,7 +20,8 @@ namespace CacheLibary.Models.Functions
     {
       int j = 0;
       Key k = await TryGetKeyByIndex(HashFunctions.GetIndexByHash(hashcode, j));
-      while (k != null && !(k.Hashcode == hashcode && key.Equals(k.ObjectKey)))
+      //IKey<K> key1 = k.ObjectKey as IKey<K>;
+      while (k != null && !(k.Hashcode == hashcode && key.Equals(Key<K>.GetGernericKey(k.ObjectKey))))
       {
         j++;
         k = await TryGetKeyByIndex(HashFunctions.GetIndexByHash(hashcode, j));
@@ -33,7 +34,7 @@ namespace CacheLibary.Models.Functions
       {
         return await GetKeyByIndex(v);
       }
-      catch
+      catch (Exception e)
       {
         return null;
       }
@@ -41,7 +42,7 @@ namespace CacheLibary.Models.Functions
     }
     private static async Task<Key> GetKeyByIndex(int v)
     {
-      return await _db.GetWithChildrenAsync<Key>(v);
+      return await _db.GetWithChildrenAsync<Key>(v, true);
     }
     public static async Task<int> GetFirstFreeKeyIndex<K>(IKey<K> key)
     {

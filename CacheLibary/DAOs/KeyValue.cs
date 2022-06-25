@@ -8,8 +8,8 @@ namespace CacheLibary.DAOs
   internal class KeyValue
   {
     [ForeignKey(typeof(Key))]
-    public int Key { get; set; }
+    public int KeyId { get; set; }
     [ForeignKey(typeof(Value))]
-    public int Value { get; set; }
+    public int ValueId { get; set; }
   }
 }

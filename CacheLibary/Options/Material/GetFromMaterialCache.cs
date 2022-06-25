@@ -8,22 +8,13 @@ using System.Threading.Tasks;
 
 namespace CacheLibary.Options.Material
 {
-  internal abstract class GetFromMaterialCache<K> : BaseGetFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, K>
+  internal abstract class GetFromMaterialCache<K> : BaseGetFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>
   {
     internal GetFromMaterialCache(IOptions options) : base(options)
     {
     }
-    //protected override async Task GetFromPersistent()
-    //{
-    //  Value = await PersistentManager.Get<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>(Key);
-    //}
-
-    //protected override void SaveToPersistent()
-    //{
-    //  PersistentManager.Save<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>(Key, Value, Options);
-    //}
   }
-  internal abstract class GetCollectionFromMaterialCache<K> : BaseGetCollectionFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, K>
+  internal abstract class GetCollectionFromMaterialCache<K> : BaseGetCollectionFromCache<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K>
   {
     internal GetCollectionFromMaterialCache(IOptions options) : base(options)
     {

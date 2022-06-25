@@ -11,12 +11,15 @@ namespace CacheLibary.Models
     public string KeyIdentifier { get; }
     public K KeyValue { get; }
     public Type ObjectType { get; }
-    internal Key(K key, string identifier, Type objectType)
+
+    public Key(string keyIdentifier, K keyValue, Type objectType)
     {
-      KeyValue = key;
-      KeyIdentifier = identifier;
+      KeyIdentifier = keyIdentifier;
+      KeyValue = keyValue;
       ObjectType = objectType;
     }
+
+
     public override bool Equals(object obj)
     {
       return Equals(obj as IKey<K>);
@@ -32,6 +35,14 @@ namespace CacheLibary.Models
     public bool Equals(IKey<K> other)
     {
       return KeyIdentifier == other.KeyIdentifier && KeyValue.Equals(other.KeyValue) && ObjectType == other.ObjectType;
+    }
+    public static Key<object> GetObjectKey(IKey<K> key)
+    {
+      return new Key<object>(key.KeyIdentifier, key.KeyValue, key.ObjectType);
+    }
+    public static Key<K> GetGernericKey(IKey<object> key)
+    {
+      return new Key<K>(key.KeyIdentifier, (K)key.KeyValue, key.ObjectType);
     }
   }
 }

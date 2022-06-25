@@ -1,5 +1,6 @@
 ﻿using CacheLibary.Interfaces;
 using SQLite;
+using SQLiteNetExtensions.Attributes;
 using SysPro.Client.WebApi.Generated.Sprinter;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,12 @@ namespace CacheLibary.DAOs.OptionDAOs
 {
   internal class MaterialDAO : Material, ICustomOptionDAO<Material>
   {
+    [TextBlob(nameof(PropertyListBlob))]
+    public new ICollection<MaterialProperty> PropertyList { get; set; }
+    public string PropertyListBlob { get; set; }
+    [TextBlob(nameof(EanListBlob))]
+    public new ICollection<MaterialEAN> EanList { get; set; }
+    public string EanListBlob { get; set; }
     public MaterialDAO(Material material)
     {
       Price = material.Price;

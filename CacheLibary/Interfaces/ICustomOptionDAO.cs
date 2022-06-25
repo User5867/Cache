@@ -8,5 +8,6 @@ namespace CacheLibary.Interfaces
   internal interface ICustomOptionDAO<T> : IEquatable<T>
   {
     int ID { get; set; }
+    //TODO: add Hashcode
   }
 }
