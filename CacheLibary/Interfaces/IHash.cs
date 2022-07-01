@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CacheLibary.Interfaces
 {
-  internal interface IBaseGetFromCache<T, K>
+  interface IHash
   {
-    Task<T> Get(K key);
+    int Id { get; set; }
+    int Hashcode { get; set; }
+    bool Deleted { get; set; }
   }
 }

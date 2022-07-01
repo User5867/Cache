@@ -11,6 +11,7 @@ namespace CacheLibary.Models
     internal BaseGetFromCache(IOptions options) : base(options)
     {
     }
+
     protected override async Task GetFromPersistent()
     {
       Value = await PersistentManager.Get<T, D, K>(Key);
@@ -20,7 +21,7 @@ namespace CacheLibary.Models
       PersistentManager.Save<T, D, K>(Key, Value, Options);
     }
   }
-  internal abstract class BaseGetCollectionFromCache<T, K> : BaseGetFromCache<ICollection<T>, K>
+  internal abstract class BaseGetCollectionFromCache<T, K> : BaseGetFromCache<ICollection<T>, K>, IBaseGetCollectionFromCache<T, K>
   {
     internal BaseGetCollectionFromCache(IOptions options) : base(options)
     {

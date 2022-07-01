@@ -8,10 +8,8 @@ namespace CacheLibary.DAOs
 {
   internal class Value
   {
-    [PrimaryKey]
+    [PrimaryKey][AutoIncrement]
     public int Id { get; set; }
-    //TODO: Hashcode remove and Id to Autoincrement
-    public int Hashcode { get; set; }
     [TextBlob(nameof(ObjectBlob))]
     public object Object { get; set; }
     [ManyToMany(typeof(KeyValue))]

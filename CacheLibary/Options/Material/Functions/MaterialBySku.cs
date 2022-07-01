@@ -20,6 +20,12 @@ namespace CacheLibary.Options.Material.Functions
     {
       return await Get(new MaterialKey<string>(key, "sku"));
     }
+
+    public override IBaseGetFromCacheExternal<SysPro.Client.WebApi.Generated.Sprinter.Material, MaterialDAO, K1> GetBaseGetFromCache<K1>()
+    {
+      return new MaterialBySku();
+    }
+
     protected override async Task GetFromService()
     {
       var service = DepCon.Scope.Resolve<SysPro.Client.WebApi.Generated.Sprinter.ISPRINTER_Client>();

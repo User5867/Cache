@@ -17,6 +17,9 @@ namespace CacheLibary.Interfaces.CacheManager
     void Save<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new();
     void SaveCollection<T, K>(IKey<K> key, ICollection<T> values, IOptions options);
     void SaveCollection<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new();
+    Task DeleteAllExpired<D>(Type objectType) where D : new();
+    void CheckTablesCreated();
     SQLiteAsyncConnection GetDatabase();
+    void UpdateExpiration<K>(IKey<K> key);
   }
 }

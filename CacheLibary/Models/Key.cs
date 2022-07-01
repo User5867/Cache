@@ -44,5 +44,18 @@ namespace CacheLibary.Models
     {
       return new Key<K>(key.KeyIdentifier, (K)key.KeyValue, key.ObjectType);
     }
+    public static bool TryGetGenericKey(IKey<object> key, out Key<K> k)
+    {
+      try
+      {
+        k = GetGernericKey(key);
+        return true;
+      }
+      catch
+      {
+        k = null;
+        return false;
+      }
+    }
   }
 }

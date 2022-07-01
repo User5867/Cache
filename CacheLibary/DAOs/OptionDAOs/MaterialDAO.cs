@@ -4,6 +4,7 @@ using SQLiteNetExtensions.Attributes;
 using SysPro.Client.WebApi.Generated.Sprinter;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CacheLibary.DAOs.OptionDAOs
@@ -34,7 +35,7 @@ namespace CacheLibary.DAOs.OptionDAOs
       Segment = material.Segment;
       PropertyList = material.PropertyList;
       EanList = material.EanList;
-      ID = Ean.GetHashCode();
+      Hashcode = EanList.FirstOrDefault().Ean.GetHashCode();
     }
 
     public MaterialDAO()
@@ -42,19 +43,27 @@ namespace CacheLibary.DAOs.OptionDAOs
     }
 
     [PrimaryKey]
-    public int ID { get; set; }
+    public int Id { get; set; }
+    public int Hashcode { get; set; }
+    public bool Deleted { get; set; }
+
     public override int GetHashCode()
     {
-      return ID;
+      return Hashcode;
     }
     public override bool Equals(object obj)
     {
-      return base.Equals(obj);
+      return Equals(obj as Material);
     }
 
     public bool Equals(Material other)
     {//TODO: add more comparer
-      return Ean == other.Ean;
+      return EanList.FirstOrDefault().Ean == other.EanList.FirstOrDefault().Ean;
+    }
+
+    public D CreateInstance<D>(Material value) where D : Material, ICustomOptionDAO<Material>
+    {
+      return new MaterialDAO(value) as D;
     }
   }
 }

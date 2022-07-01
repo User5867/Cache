@@ -16,52 +16,34 @@ namespace CacheLibary.Models.Functions
     {
       return key.GetHashCode();
     }
+    public static async Task<Key> GetKey<K>(IKey<K> key)
+    {
+      int hashcode = GetHashcode(key);
+      return await GetKeyByHashcode(hashcode, key);
+    }
     public static async Task<Key> GetKeyByHashcode<K>(int hashcode, IKey<K> key)
     {
-      int j = 0;
-      Key k = await TryGetKeyByIndex(HashFunctions.GetIndexByHash(hashcode, j));
-      //IKey<K> key1 = k.ObjectKey as IKey<K>;
-      while (k != null && !(k.Hashcode == hashcode && key.Equals(Key<K>.GetGernericKey(k.ObjectKey))))
+      Func<Key, bool> Equals = new Func<Key, bool>((d) =>
       {
-        j++;
-        k = await TryGetKeyByIndex(HashFunctions.GetIndexByHash(hashcode, j));
-      }
+        bool b = Key<K>.TryGetGenericKey(d.ObjectKey, out Key<K> genericKey);
+        return b && key.Equals(genericKey);
+      });
+      return await HashFunctions.GetByHashcode<Key, IKey<K>>(hashcode, Equals);
+    }
+    public static int GetFirstFreeKeyIndex<K>(IKey<K> key)
+    {
+      int hashcode = GetHashcode(key);
+      return GetFirstFreeKeyIndex(hashcode);
+    }
+    private static int GetFirstFreeKeyIndex(int hashcode)
+    {
+      return HashFunctions.GetFirstFreeIndex<Key>(hashcode);
+    }
+    public static async Task<Key> CreateAndGetKey<K>(IKey<K> key, IOptions options)
+    {
+      Key k = new Key() { ObjectKey = Key<K>.GetObjectKey(key), Hashcode = GetHashcode(key), Id = GetFirstFreeKeyIndex(key) };
+      await ExpirationFunctions.CreateExpiration(k, options);
       return k;
     }
-    private static async Task<Key> TryGetKeyByIndex(int v)
-    {
-      try
-      {
-        return await GetKeyByIndex(v);
-      }
-      catch (Exception e)
-      {
-        return null;
-      }
-      
-    }
-    private static async Task<Key> GetKeyByIndex(int v)
-    {
-      return await _db.GetWithChildrenAsync<Key>(v, true);
-    }
-    public static async Task<int> GetFirstFreeKeyIndex<K>(IKey<K> key)
-    {
-      return await GetFirstFreeKeyIndex(GetHashcode(key));
-    }
-    private static async Task<int> GetFirstFreeKeyIndex(int hashcode)
-    {
-      int j = 0;
-      int index;
-      Key k;
-      do
-      {
-        index = HashFunctions.GetIndexByHash(hashcode, j);
-        k = await TryGetKeyByIndex(index);
-        j++;
-      }
-      while (k != null && k.Hashcode != PersistentCacheManager.Deletet);
-      return index;
-    }
-    
   }
 }

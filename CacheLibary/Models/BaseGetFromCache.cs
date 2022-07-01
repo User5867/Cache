@@ -19,6 +19,7 @@ namespace CacheLibary.Models
     {
       Options = options;
     }
+
     protected async Task<T> Get(IKey<K> key)
     {
       ClearPropertys();
@@ -62,10 +63,19 @@ namespace CacheLibary.Models
       if (ValueIsSet())
         SaveToMemory();
     }
+
+    protected void UpdateExpiration()
+    {
+      PersistentManager.UpdateExpiration(Key);
+    }
+
     private async Task GetFromServiceAndSave()
     {
       if (ValueIsSet())
+      {
+        UpdateExpiration();
         return;
+      }
       await GetFromService();
       if (ValueIsSet())
         SaveToCache();

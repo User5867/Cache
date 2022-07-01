@@ -1,5 +1,6 @@
 ﻿using CacheLibary.Interfaces;
 using CacheLibary.Interfaces.CacheManager;
+using CacheLibary.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,7 @@ namespace CacheLibary
     }
     public T GetCache<T>()
     {
+      PersistentCacheManager.Instance.CheckTablesCreated();
       if (_caches[typeof(T)] is T cache)
         return cache;
       return default;

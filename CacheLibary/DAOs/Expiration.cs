@@ -8,13 +8,14 @@ namespace CacheLibary.DAOs
 {
   internal class Expiration
   {
-    [TextBlob(nameof(KeyBlob))]
-    public object Key { get; set; }
+    [PrimaryKey][AutoIncrement]
+    public int Id { get; set; }
     [ForeignKey(typeof(Key))]
-    public string KeyBlob { get; set; }
-    [OneToOne]
-    public Value Value { get; set; }
-    public DateTime Experation { get; set; }
-    public DateTime LastAccess { get; set; }
+    public int KeyId { get; set; }
+    [OneToOne(CascadeOperations = CascadeOperation.CascadeInsert)]
+    public Key Key { get; set; }
+    public DateTime? TotalExpiration { get; set; }
+    public TimeSpan? SlidingExpiration { get; set; }
+    public DateTime? LastAccess { get; set; }
   }
 }

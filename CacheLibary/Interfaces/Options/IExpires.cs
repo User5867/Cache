@@ -8,6 +8,7 @@ namespace CacheLibary.Interfaces.Options
   {
     TimeSpan? MemoryExpiration { get; }
     TimeSpan? PersitentExperation { get; }
+    TimeSpan? PersistenSlidingExpiration { get; }
     TimeSpan? MemorySlidingExpiration { get; }
   }
 }

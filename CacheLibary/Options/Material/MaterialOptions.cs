@@ -13,6 +13,9 @@ namespace CacheLibary.Options.Material
     public TimeSpan? PersitentExperation => TimeSpan.FromHours(1);
     public CacheItemPriority Priority => CacheItemPriority.Low;
     public TimeSpan? MemorySlidingExpiration => null;
+
+    public TimeSpan? PersistenSlidingExpiration => TimeSpan.FromMinutes(10);
+
     IPriority IOptions.Priority => this;
     IExpires IOptions.Expires => this;
     IUpdates IOptions.Updates => null;
