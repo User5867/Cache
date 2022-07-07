@@ -4,8 +4,11 @@ using CacheLibary.Interfaces.Options;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
@@ -20,7 +23,8 @@ namespace CacheLibary.Models
 
     private MemoryCacheManager()
     {
-      
+      ReadFromFile();
+      Run();
     }
     public T TryGet<T, K>(IKey<K> key)
     {
@@ -29,26 +33,38 @@ namespace CacheLibary.Models
 
     public T Get<T, K>(IKey<K> key)
     {
-      return _memoryCache.Get<T>(key);
+      return _memoryCache.Get<T>(Key<K>.GetObjectKey(key));
     }
 
     public void Save<T, K>(IKey<K> key, T value, IOptions options)
     {
-      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = 1, Priority = options.Priority.Priority};
+      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = 1, Priority = options.Priority.Priority };
       if (options.Expires is IExpires expires)
       {
         entryOptions.SlidingExpiration = expires.MemorySlidingExpiration;
         entryOptions.AbsoluteExpirationRelativeToNow = expires.MemoryExpiration;
       }
 
-      _memoryCache.Set(key, value, entryOptions);
+      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
+    }
+    public void Save<T, K>(IKey<K> key, ICollection<T> value, IOptions options)
+    {
+      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = value.Count, Priority = options.Priority.Priority };
+      if (options.Expires is IExpires expires)
+      {
+        entryOptions.SlidingExpiration = expires.MemorySlidingExpiration;
+        entryOptions.AbsoluteExpirationRelativeToNow = expires.MemoryExpiration;
+      }
+
+      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
     }
     private bool _isRunning;
-    private int _saveInterval;
+    private int _saveInterval = 10000;
     private async void Run()
     {
       if (_isRunning)
         return;
+      _isRunning = true;
       while (_isRunning)
       {
         SaveToFile();
@@ -56,33 +72,53 @@ namespace CacheLibary.Models
       }
     }
     private string _fileName = DependencyService.Get<IFileHelper>().GetLocalFilePath("cache.txt");
-    private void SaveToFile()
+    private void ReadFromFile()
     {
-      string json = null;
-      try
-      {
-        json = File.ReadAllText(_fileName);
-      }
-      catch (Exception e)
-      {
+      if (!File.Exists(_fileName))
+        return;
+      string json = File.ReadAllText(_fileName);
 
-      }
       if (string.IsNullOrEmpty(json))
         return;
-      Dictionary<IKey<object>, object> dic = new Dictionary<IKey<object>, object>();
-      try
+      ICollection<KeyValuePair<Key<object>, CustomCacheEntry>> keyValuePairs = JsonConvert.DeserializeObject<ICollection<KeyValuePair<Key<object>, CustomCacheEntry>>>(json);
+      MethodInfo methodInfo = typeof(CacheExtensions).GetMethods().Where(m => m.Name == "Set").Where(m => m.IsGenericMethod).Where(m => m.IsStatic).FirstOrDefault(m => m.GetParameters().LastOrDefault().ParameterType == typeof(MemoryCacheEntryOptions));
+      foreach (var entry in keyValuePairs)
       {
-        dic = JsonConvert.DeserializeObject<Dictionary<IKey<object>, object>>(json);
+        Type t = entry.Key.ObjectType;
+        MemoryCacheEntryOptions m = new MemoryCacheEntryOptions
+        {
+          AbsoluteExpiration = entry.Value.AbsoluteExpiration,
+          AbsoluteExpirationRelativeToNow = entry.Value.AbsoluteExpirationRelativeToNow,
+          Priority = entry.Value.Priority,
+          Size = entry.Value.Size,
+          SlidingExpiration = entry.Value.SlidingExpiration
+        };
+        m.ExpirationTokens.ToList().AddRange(entry.Value.ExpirationTokens);
+        m.PostEvictionCallbacks.ToList().AddRange(entry.Value.PostEvictionCallbacks);
+        MethodInfo mi = methodInfo.MakeGenericMethod(t);
+        object v = JsonConvert.DeserializeObject(entry.Value.Value.ToString(), t);
+        _ = mi.Invoke(_memoryCache, new object[] { _memoryCache, entry.Key, v, m });
       }
-      catch (Exception e)
-      {
+    }
+    private void SaveToFile()
+    {
+      Type type = typeof(MemoryCache);
+      FieldInfo fieldinfo = type.GetField("_coherentState", BindingFlags.NonPublic | BindingFlags.Instance);
+      if (fieldinfo == null)
+        return;
+      var f = fieldinfo.GetValue(_memoryCache);
+      PropertyInfo propertyInfo = fieldinfo.FieldType.GetProperty("EntriesCollection", BindingFlags.NonPublic | BindingFlags.Instance);
+      ICollection c = propertyInfo.GetValue(f) as ICollection;
+      ICollection<KeyValuePair<object, ICacheEntry>> cacheCollectionValues = new List<KeyValuePair<object, ICacheEntry>>();
 
-      }
-      foreach(var entry in dic)
+      foreach (var cI in c)
       {
-        //useReflection to get Type
+        ICacheEntry cacheItemValue = cI.GetType().GetProperty("Value").GetValue(cI, null) as ICacheEntry;
+        object cacheItemKey = cI.GetType().GetProperty("Key").GetValue(cI, null);
+        cacheCollectionValues.Add(new KeyValuePair<object, ICacheEntry>(cacheItemKey, cacheItemValue));
       }
-            throw new NotImplementedException();
+      string json = JsonConvert.SerializeObject(cacheCollectionValues);
+      File.WriteAllText(_fileName, json);
     }
   }
 }

@@ -20,30 +20,32 @@ namespace CacheLibary.Models
       Options = options;
     }
 
-    protected async Task<T> Get(IKey<K> key)
+    protected virtual async Task<T> Get(IKey<K> key, bool offline = false)
     {
       ClearPropertys();
       Key = key;
       GetFromMemory();
       await GetFromPersistentAndSave();
-      await GetFromServiceAndSave();
+      UpdateExpiration();
+      if(!offline)
+        await GetFromServiceAndSave();
       return Value;
     }
 
-    private void ClearPropertys()
+    protected virtual void ClearPropertys()
     {
       Value = default;
       Key = null;
     }
-    protected bool ValueIsSet()
+    protected virtual bool ValueIsSet()
     {
       return !IsNull(Value);
     }
-    private bool IsNull(T t)
+    protected bool IsNull(object t)
     {
       return t == null;
     }
-    protected void GetFromMemory()
+    protected virtual void GetFromMemory()
     {
       Value = MemoryManager.Get<T, K>(Key);
     }
@@ -51,11 +53,11 @@ namespace CacheLibary.Models
     {
       PersistentManager.Save(Key, Value, Options);
     }
-    protected void SaveToMemory()
+    protected virtual void SaveToMemory()
     {
       MemoryManager.Save(Key, Value, Options);
     }
-    private async Task GetFromPersistentAndSave()
+    protected virtual async Task GetFromPersistentAndSave()
     {
       if (ValueIsSet())
         return;
@@ -64,19 +66,26 @@ namespace CacheLibary.Models
         SaveToMemory();
     }
 
-    protected void UpdateExpiration()
-    {
-      PersistentManager.UpdateExpiration(Key);
-    }
-
-    private async Task GetFromServiceAndSave()
+    protected virtual void UpdateExpiration()
     {
       if (ValueIsSet())
-      {
-        UpdateExpiration();
+        PersistentManager.UpdateExpiration(Key);
+    }
+
+    protected async Task GetFromServiceAndSave()
+    {
+      if (ValueIsSet())
         return;
+      try
+      {
+        await GetFromService();
       }
-      await GetFromService();
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Write("[BaseGetFromCache.GetFromService]" + e.Message);
+        return; 
+      }
+      
       if (ValueIsSet())
         SaveToCache();
     }
@@ -93,5 +102,12 @@ namespace CacheLibary.Models
     }
     protected abstract Task GetFromService();
     public abstract Task<T> Get(K key);
+
+    public IBaseGetFromCache<T, K1> GetBaseGetFromCache<K1>()
+    {
+      if (typeof(K1) == typeof(K))
+        return (IBaseGetFromCache<T, K1>)this;
+      throw new Exception();
+    }
   }
 }

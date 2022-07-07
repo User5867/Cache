@@ -40,9 +40,14 @@ namespace CacheLibary.Models.Functions
       return (await _db.Table<KeyValue>().Where(kv => kv.KeyId == keyId).FirstOrDefaultAsync()).ValueId;
     }
 
-    private static async Task<ICollection<int>> GetValueIds(int keyId)
+    private static async Task<IEnumerable<int>> GetValueIds(int keyId)
     {
       return (await _db.Table<KeyValue>().Where(kv => kv.KeyId == keyId).ToListAsync()).Select(kv => kv.ValueId).ToList();
+    }
+
+    internal static async Task<IEnumerable<int>> GetValueIds(IEnumerable<int> keyIds)
+    {
+      return (await _db.Table<KeyValue>().Where(kv => keyIds.Contains(kv.KeyId)).ToListAsync()).Select(kv => kv.ValueId).Distinct();
     }
 
     private static async Task<T> GetValueByIndex<T>(int id) where T : new()
@@ -126,7 +131,7 @@ namespace CacheLibary.Models.Functions
       Key k = await KeyFunctions.GetKey(key);
       if (k == null)
         return default;
-      ICollection<int> valueIds = await GetValueIds(k.Id);
+      IEnumerable<int> valueIds = await GetValueIds(k.Id);
       ICollection<T> values = new List<T>();
       foreach(int id in valueIds)
       {

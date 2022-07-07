@@ -8,8 +8,8 @@ namespace CacheLibary.Models
 {
   internal abstract class Cache<T, D> : Cache<T> where D : new()
   {
-    protected new Dictionary<string, IBaseGetFromCacheExternal<T, D>> _getFromCache = new Dictionary<string, IBaseGetFromCacheExternal<T, D>>();
-    protected new Dictionary<string, IBaseGetCollectionFromCacheExternal<T, D>> _getCollectionFromCache = new Dictionary<string, IBaseGetCollectionFromCacheExternal<T, D>>();
+    protected new Dictionary<int, IBaseGetFromCacheExternal<T, D>> _getFromCache = new Dictionary<int, IBaseGetFromCacheExternal<T, D>>();
+    protected new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>> _getCollectionFromCache = new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>>();
     protected override async Task DeleteAllExpired()
     {
       await PersistentCacheManager.Instance.DeleteAllExpired<D>(typeof(T));
@@ -17,14 +17,19 @@ namespace CacheLibary.Models
   }
   internal abstract class Cache<T> : ICache
   {
-    protected Dictionary<string, IBaseGetFromCache<T>> _getFromCache = new Dictionary<string, IBaseGetFromCache<T>>();
-    protected Dictionary<string, IBaseGetCollectionFromCache<T>> _getCollectionFromCache = new Dictionary<string, IBaseGetCollectionFromCache<T>>();
+    protected Dictionary<int, IBaseGetFromCache<T>> _getFromCache = new Dictionary<int, IBaseGetFromCache<T>>();
+    protected Dictionary<int, IBaseGetCollectionFromCache<T>> _getCollectionFromCache = new Dictionary<int, IBaseGetCollectionFromCache<T>>();
     public abstract IOptions Options { get; }
     protected bool _isRunning;
+    public Cache()
+    {
+      RunPersistentExpiration();
+    }
     protected async void RunPersistentExpiration()
     {
       if (_isRunning)
         return;
+      _isRunning = true;
       while (_isRunning)
       {
         await DeleteAllExpired();

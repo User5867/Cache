@@ -4,7 +4,9 @@ using System.Text;
 
 namespace CacheLibary.Interfaces.Options
 {
-  internal interface IExpires : IExpiresMemory, IExpiresPersistent
+  interface IExpiresMemory
   {
+    TimeSpan? MemoryExpiration { get; }
+    TimeSpan? MemorySlidingExpiration { get; }
   }
 }

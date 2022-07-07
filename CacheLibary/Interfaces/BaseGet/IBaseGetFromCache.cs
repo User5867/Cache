@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace CacheLibary.Interfaces
 {
-  internal interface IBaseGetFromCache<T, K>
+  internal interface IBaseGetFromCache<T, K> : IBaseGetFromCache<T>
   {
     Task<T> Get(K key);
   }

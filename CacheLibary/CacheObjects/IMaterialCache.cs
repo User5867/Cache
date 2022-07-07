@@ -9,6 +9,7 @@ namespace CacheLibary.CacheObjects
   public interface IMaterialCache
   {
     Task<ICollection<Material>> GetMaterialByName(string name);
-    Task<Material> GetMaterialBySku(string sku);
+    Task<ICollection<Material>> GetMaterialByMaterialNumberList(IEnumerable<string> materialNumber);
+    Task<Material> GetMaterialByMaterialNumber(string materialNumber);
   }
 }

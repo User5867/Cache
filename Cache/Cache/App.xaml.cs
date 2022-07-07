@@ -1,5 +1,6 @@
 ﻿using CacheHelper;
 using Newtonsoft.Json;
+using SysPro.PSM.Controls;
 using SysPro.PSM.LocalStorage;
 using System;
 using System.Collections.Concurrent;
@@ -15,15 +16,18 @@ namespace Cache
     public App()
     {
       InitializeComponent();
-      Task.Run(async () =>
-      {
-        await CacheHelper.CacheHelper.InitApp();
-        MainPage = new MainPage();
-      });
+      XF.Material.Forms.Material.Init(this);
+      Current.MainPage = new MainPage();
+      NavigationController.Instance.PushModalAsync(new LoadData());
+      
     }
 
     protected override void OnStart()
     {
+      Task.Run(async () =>
+      {
+        await CacheHelper.CacheHelper.InitApp();
+      });
     }
 
     protected override void OnSleep()

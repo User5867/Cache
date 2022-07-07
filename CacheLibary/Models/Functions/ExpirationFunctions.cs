@@ -1,6 +1,7 @@
 ﻿using CacheLibary.DAOs;
 using CacheLibary.Interfaces;
 using SQLite;
+using SQLiteNetExtensions.Extensions;
 using SQLiteNetExtensionsAsync.Extensions;
 using System;
 using System.Collections.Generic;
@@ -63,35 +64,47 @@ namespace CacheLibary.Models.Functions
       List<Expiration> expired = totalExpired;
       expired.AddRange(slidingExpired);
       IEnumerable<object> id = expired.Select(t => (object)t.Id);
-      await _db.DeleteAllIdsAsync<Expiration>(id);
-      IEnumerable<Key> keys = await _db.GetAllWithChildrenAsync<Key>(k => id.Contains(k.ExpirationId));
-      foreach (Key key in keys)
+      await _db.RunInTransactionAsync(t =>
       {
-        key.Deleted = true;
-        key.ExpirationId = -1;
-      }
-      await _db.UpdateAllAsync(keys);
+        t.DeleteAllIds<Expiration>(id);
+        IEnumerable<Key> keys = t.GetAllWithChildren<Key>(k => id.Contains(k.ExpirationId));
+        foreach (Key key in keys)
+        {
+          key.Deleted = true;
+          key.ExpirationId = -1;
+        }
+        _ = t.UpdateAll(keys);
+      });
+      
     }
 
     internal static async Task DeleteExpired<D>(Type objectType) where D : new()
     {
-      ICollection<Key> keys = await _db.Table<Key>().Where(k => k.Deleted).ToListAsync();
+      ICollection<Key> keys = await _db.Table<Key>().Where(k => k.Deleted && k.ObjectKeyBlob != null).ToListAsync();
       await RemoveKeysForOtherTypes(objectType, keys);
       IEnumerable<int> keyIds = keys.Select(k => k.Id);
-      IEnumerable<KeyValue> keyValues = await _db.Table<KeyValue>().Where(kv => keyIds.Contains(kv.KeyId)).ToListAsync();
-      IEnumerable<int> valueIds = keyValues.Select(kv => kv.ValueId).Distinct();
-      foreach (KeyValue kv in keyValues)
+      IEnumerable<int> valueIds = await ValueFunctions.GetValueIds(keyIds);
+      foreach (Key k in keys)
       {
-        await _db.DeleteAsync(kv);
+        k.ObjectKeyBlob = null;
       }
-      keyIds = (await _db.Table<KeyValue>().Where(kv => valueIds.Contains(kv.ValueId)).ToListAsync()).Select(kv => kv.KeyId);
-      keys = await _db.Table<Key>().Where(k => keyIds.Contains(k.Id)).ToListAsync();
-      await RemoveKeysForOtherTypes(objectType, keys);
-      keyIds = keys.Select(k => k.Id);
-      keyValues = await _db.Table<KeyValue>().Where(kv => keyIds.Contains(kv.KeyId)).ToListAsync();
-      IEnumerable<int> vIds = keyValues.Select(kv => kv.ValueId).Distinct();
-      IEnumerable<object> values = valueIds.ToList().Where(v => !vIds.Contains(v)).Select(v => (object)v);
-      await _db.DeleteAllIdsAsync<D>(values);
+      await _db.RunInTransactionAsync(async t =>
+      {
+        _ = t.UpdateAll(keys);
+        foreach (int id in keyIds)
+        {
+          _ = t.Query<KeyValue>("DELETE FROM [KeyValue] WHERE [KeyId] = " + id);
+        }
+        keyIds = (await _db.Table<KeyValue>().Where(kv => valueIds.Contains(kv.ValueId)).ToListAsync()).Select(kv => kv.KeyId);
+        keys = await _db.Table<Key>().Where(k => keyIds.Contains(k.Id)).ToListAsync();
+        await RemoveKeysForOtherTypes(objectType, keys);
+        keyIds = keys.Select(k => k.Id);
+        IEnumerable<int> vIds = await ValueFunctions.GetValueIds(keyIds);
+        valueIds = valueIds.ToList().Where(v => !vIds.Contains(v));
+        IEnumerable<object> values = valueIds.Select(v => (object)v);
+        t.DeleteAllIds<D>(values);
+      });
+      
     }
 
     private static async Task RemoveKeysForOtherTypes(Type objectType, ICollection<Key> keys)

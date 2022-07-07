@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<controls:BaseContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:SysPro.PSM.Controls;assembly=SysPro.PSM.Controls"
+             x:Class="Cache.LoadData">
+  <ContentPage.Content>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <Picker Grid.Row="0" ItemsSource="{Binding Criterias}" SelectedItem="{Binding SelectedCriteria}"/>
+      <Entry Grid.Row="1" Text="{Binding Input, Mode=OneWayToSource}"/>
+      <Button Grid.Row="2" Text="Search" Command="{Binding SearchCommand}"/>
+      <Label Grid.Row="3" Text="{Binding LoadTime, Mode=OneWay}" VerticalOptions="Center" HorizontalOptions="Center"/>
+      <ListView Grid.Row="4" ItemsSource="{Binding Materials}">
+        <ListView.ItemTemplate>
+          <DataTemplate>
+            <TextCell Text="{Binding MaterialName}"/>
+          </DataTemplate>
+        </ListView.ItemTemplate>
+      </ListView>
+    </Grid>
+  </ContentPage.Content>
+</controls:BaseContentPage>

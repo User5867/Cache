@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -11,9 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microcharts" Version="0.9.5.7" />
+    <PackageReference Include="Microcharts.Forms" Version="0.9.5.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="RestEase" Version="1.5.0" />
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
+    <PackageReference Include="SkiaSharp.Views.Forms" Version="2.88.0" />
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.2012" />
     <PackageReference Include="Xamarin.Essentials" Version="1.6.1" />
+    <PackageReference Include="XF.Material" Version="1.6.5" />
+    <PackageReference Include="ZXing.Net.Mobile.Forms" Version="3.0.0-beta5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,11 +31,23 @@
     <Reference Include="CacheHelper">
       <HintPath>..\..\..\..\CacheHelper\CacheHelper\bin\Debug\netstandard2.0\CacheHelper.dll</HintPath>
     </Reference>
+    <Reference Include="SysPro.PSM.Controls">
+      <HintPath>..\..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.Controls.dll</HintPath>
+    </Reference>
     <Reference Include="SysPro.PSM.Endpoints">
       <HintPath>..\..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.Endpoints.dll</HintPath>
     </Reference>
     <Reference Include="SysPro.PSM.LocalStorage">
       <HintPath>..\..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.LocalStorage.dll</HintPath>
     </Reference>
+    <Reference Include="SysPro.PSM.Utils">
+      <HintPath>..\..\..\..\proSystemMobile\PSM\PSM\PSM\bin\Debug\netstandard2.0\SysPro.PSM.Utils.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="LoadData.xaml">
+      <Generator>MSBuild:UpdateDesignTimeXaml</Generator>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

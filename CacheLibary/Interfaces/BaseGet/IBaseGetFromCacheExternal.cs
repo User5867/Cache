@@ -4,12 +4,11 @@ using System.Text;
 
 namespace CacheLibary.Interfaces
 {
-  interface IBaseGetFromCacheExternal<T, D>
+  interface IBaseGetFromCacheExternal<T, D> : IBaseGetFromCache<T>
   {
-    IBaseGetFromCacheExternal<T, D, K> GetBaseGetFromCache<K>();
   }
 
-  internal interface IBaseGetFromCacheExternal<T, D, K> : IBaseGetFromCache<T, K>, IBaseGetFromCacheExternal<T, D>
+  internal interface IBaseGetFromCacheExternal<T, D, K> : IBaseGetFromCacheExternal<T, D>, IBaseGetFromCache<T, K>
   {
   }
 }

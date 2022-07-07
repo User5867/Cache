@@ -58,6 +58,8 @@ namespace CacheLibary.DAOs.OptionDAOs
 
     public bool Equals(Material other)
     {//TODO: add more comparer
+      if (other == null)
+        return false;
       return EanList.FirstOrDefault().Ean == other.EanList.FirstOrDefault().Ean;
     }
 

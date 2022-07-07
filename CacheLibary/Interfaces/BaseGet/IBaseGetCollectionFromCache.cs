@@ -4,11 +4,10 @@ using System.Text;
 
 namespace CacheLibary.Interfaces
 {
-  interface IBaseGetCollectionFromCache<T, K> : IBaseGetFromCache<ICollection<T>, K>
+  interface IBaseGetCollectionFromCache<T, K> : IBaseGetCollectionFromCache<T>
   {
   }
-  interface IBaseGetCollectionFromCache<T> : IBaseGetCollectionFromCache<T, object>
+  interface IBaseGetCollectionFromCache<T> : IBaseGetFromCache<ICollection<T>>
   {
-
   }
 }
