@@ -21,12 +21,11 @@ namespace CacheLibary.Options.Material.Functions
     {
       return await Get(new MaterialKey<IEnumerable<string>>(key, "materialNumber"));
     }
-
-    protected override async Task GetFromService()
+    protected override async Task<ICollection<SysPro.Client.WebApi.Generated.Sprinter.Material>> GetFromService(IKey<IEnumerable<string>> key)
     {
-      if (Key == null || !Key.KeyValue.Any())
-        return;
-      IEnumerable<string> keyValues = Key.KeyValue;
+      if (key == null || !key.KeyValue.Any())
+        return null;
+      IEnumerable<string> keyValues = key.KeyValue;
 
       RecordFilter recordFilter = new RecordFilter();
       string filter = string.Join(",", keyValues.Select(m => $"'{m}'"));
@@ -41,12 +40,13 @@ namespace CacheLibary.Options.Material.Functions
         );
 
       if (res.Success)
-        Value = res.MaterialList;
+        return res.MaterialList;
+      return null;
     }
 
-    protected override void LoadKeyFromCurrentValue()
+    protected override IKey<string> LoadKeyFromCurrentValue(SysPro.Client.WebApi.Generated.Sprinter.Material singleValue)
     {
-      SingleKey = new MaterialKey<string>(SingleValue.MaterialNumber, "sku");
+      return new MaterialKey<string>(singleValue.MaterialNumber, "materialNumber");
     }
   }
 }

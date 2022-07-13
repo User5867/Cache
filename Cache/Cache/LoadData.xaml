@@ -19,7 +19,12 @@
       <ListView Grid.Row="4" ItemsSource="{Binding Materials}">
         <ListView.ItemTemplate>
           <DataTemplate>
-            <TextCell Text="{Binding MaterialName}"/>
+            <ViewCell>
+              <StackLayout Orientation="Horizontal" VerticalOptions="Center" Margin="5, 0, 5, 0">
+                <Label Text="{Binding MaterialName}"/>
+                <Label Text="{Binding MaterialNumber}" HorizontalOptions="End"/>
+              </StackLayout>
+            </ViewCell>
           </DataTemplate>
         </ListView.ItemTemplate>
       </ListView>

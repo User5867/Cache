@@ -16,11 +16,11 @@ namespace Cache
   class LoadDataViewModel : BaseViewModel
   {
     private const string _materialByName = "name";
-    private const string _materialBySku = "sku";
+    private const string _materialByMaterialNumber = "materialNumber";
     private Stopwatch _stopwatch = new Stopwatch();
     enum SearchCriteria
     {
-      MATERIAL_BY_NAME, MATERIAL_BY_SKU
+      MATERIAL_BY_NAME, MATERIAL_BY_MATERIAL_NUMBER
     }
     private Dictionary<string, SearchCriteria> _getCriteria = new Dictionary<string, SearchCriteria>();
     public ICollection<string> Criterias { get; set; } = new List<string>();
@@ -42,8 +42,9 @@ namespace Cache
     public string LoadTime { get => _stopwatch.Elapsed.ToString(); }
     public string Input { get; set; }
     private IEnumerable<Material> _materials = new List<Material>();
-    public IEnumerable<Material> Materials 
-    { get => _materials;
+    public IEnumerable<Material> Materials
+    {
+      get => _materials;
       set => SetProperty(ref _materials, value);
     }
     private IMaterialCache _materialCache;
@@ -53,30 +54,6 @@ namespace Cache
       InitCommands();
       ICacheManager cacheManager = CacheManager.Instance;
       _materialCache = cacheManager.GetCache<IMaterialCache>();
-      Materials = new List<Material> { new Material { MaterialName = "Test" }, new Material { MaterialName = "Test2" } };
-      //_ = Task.Run(async () =>
-      //  {
-      //    try
-      //    {
-      //      Stopwatch st = new Stopwatch();
-      //      st.Start();
-      //      Material m = await materialCache.GetMaterialBySku("9300806190006");
-      //      Debug.Write(st.Elapsed.ToString());
-      //      st.Restart();
-      //      m = await materialCache.GetMaterialBySku("9332822604687");
-      //      Debug.Write(st.Elapsed.ToString());
-      //      st.Restart();
-      //      m = await materialCache.GetMaterialBySku("9300806190006");
-      //      Debug.Write(st.Elapsed.ToString());
-      //      st.Restart();
-      //      var ma = await materialCache.GetMaterialByName("CAP SLV SLOGAN PRINT TEE");CANVAS LACE UP CARLOS
-      //      Debug.Write(st.Elapsed.ToString());
-      //    }
-      //    catch (Exception e)
-      //    {
-
-      //    }
-      //  });
     }
 
     private void InitCommands()
@@ -100,29 +77,30 @@ namespace Cache
           await Task.Delay(10);
         }
       });
-      
+
     }
 
     private void Load()
     {
       _ = Task.Run(async () =>
       {
-        bool list = true;
+        //bool list = true;
         RunTimer();
         ICollection<Material> ms;
         Material m;
         if (_searchBy == SearchCriteria.MATERIAL_BY_NAME)
           Materials = await _materialCache.GetMaterialByName(Input);
-        if (_searchBy == SearchCriteria.MATERIAL_BY_SKU)
+        if (_searchBy == SearchCriteria.MATERIAL_BY_MATERIAL_NUMBER)
           Materials = new List<Material>() { await _materialCache.GetMaterialByMaterialNumber(Input) };
-        if(list)
-          try
-          { 
-            Materials = await _materialCache.GetMaterialByMaterialNumberList(new List<string> { "61975828", "62042987", "62023566", "62145893" });
-          }catch(Exception e)
-          {
+        //if (list)
+        //  try
+        //  {
+        //    await _materialCache.GetMaterialByMaterialNumberList(new List<string> { "61975828", "62042987", "62023566", "62145893" });
+        //  }
+        //  catch (Exception e)
+        //  {
 
-          }
+        //  }
         StopTimer();
       });
     }
@@ -130,10 +108,10 @@ namespace Cache
     private void FillCriterias()
     {
       Criterias.Add(_materialByName);
-      Criterias.Add(_materialBySku);
+      Criterias.Add(_materialByMaterialNumber);
       _getCriteria.Add(_materialByName, SearchCriteria.MATERIAL_BY_NAME);
-      _getCriteria.Add(_materialBySku, SearchCriteria.MATERIAL_BY_SKU);
-      SelectedCriteria = _materialBySku;
+      _getCriteria.Add(_materialByMaterialNumber, SearchCriteria.MATERIAL_BY_MATERIAL_NUMBER);
+      SelectedCriteria = _materialByMaterialNumber;
     }
   }
 }

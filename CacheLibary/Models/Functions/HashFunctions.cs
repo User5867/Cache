@@ -11,7 +11,6 @@ namespace CacheLibary.Models.Functions
   internal class HashFunctions
   {
     private static int _size = 104395337;
-    private static int _m = 104395303;
     private static SQLiteAsyncConnection _db = PersistentCacheManager.Instance.GetDatabase();
 
     private static HashFunctions Instance = new HashFunctions();
@@ -22,7 +21,7 @@ namespace CacheLibary.Models.Functions
     }
     public static int GetIndexByHash(int hash, int j)
     {
-      return Mod(Mod(hash, _size) - j * (1 + Mod(hash, _m)), _size);
+      return Mod(Mod(hash, _size) - j * (1 + Mod(hash, _size - 2)), _size);
     }
     internal static int GetFirstFreeIndex<D>(int hashcode) where D : IHash, new()
     {

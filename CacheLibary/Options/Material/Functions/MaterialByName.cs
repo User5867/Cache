@@ -21,7 +21,7 @@ namespace CacheLibary.Options.Material.Functions
       return await Get(new MaterialKey<string>(key, "name"));
     }
 
-    protected override async Task GetFromService()
+    protected override async Task<ICollection<SysPro.Client.WebApi.Generated.Sprinter.Material>> GetFromService(IKey<string> Key)
     {
       var service = DepCon.Scope.Resolve<SysPro.Client.WebApi.Generated.Sprinter.ISPRINTER_Client>();
       var user = new UserInfoFac<SysPro.Client.WebApi.Generated.Sprinter.UserInfo>().Build();
@@ -33,7 +33,8 @@ namespace CacheLibary.Options.Material.Functions
         RecordFilter = recordFilter.Build()
       });
       if (res.Success)
-        Value = res.MaterialList;
+        return res.MaterialList;
+      return null;
     }
   }
 }

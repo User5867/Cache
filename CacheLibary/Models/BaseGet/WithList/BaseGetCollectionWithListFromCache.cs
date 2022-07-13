@@ -8,8 +8,6 @@ namespace CacheLibary.Models.BaseGet
 {
   abstract class BaseGetCollectionWithListFromCache<T, K> : BaseGetCollectionFromCache<T, IEnumerable<K>>
   {
-    public T SingleValue { get; set; }
-    public IKey<K> SingleKey { get; set; }
     internal BaseGetCollectionWithListFromCache(IOptions options) : base(options)
     {
     }
@@ -20,23 +18,22 @@ namespace CacheLibary.Models.BaseGet
       ICollection<K> unfoundKeys = new List<K>();
       foreach (K k in key.KeyValue)
       {
-        ClearPropertys();
-        SingleKey = new Key<K>(key.KeyIdentifier, k, key.ObjectType);
-        GetFromMemory();
-        await GetFromPersistentAndSave();
-        UpdateExpiration();
-        if (ValueIsSet())
-          values.Add(SingleValue);
+        IKey<K> singleKey = new Key<K>(key.KeyIdentifier, k, key.ObjectType);
+        T singleValue = GetFromMemory(singleKey);
+        singleValue = await GetFromPersistentAndSave(singleKey, singleValue);
+        UpdateExpiration(singleKey, singleValue);
+        if (ValueIsSet(singleValue))
+          values.Add(singleValue);
         else
           unfoundKeys.Add(k);
       }
       if (unfoundKeys.Count == 0)
         return values;
-      Key = new Key<IEnumerable<K>>(key.KeyIdentifier, unfoundKeys, key.ObjectType);
+      Key<IEnumerable<K>> keys = new Key<IEnumerable<K>>(key.KeyIdentifier, unfoundKeys, key.ObjectType);
       if (!offline)
       {
-        await GetFromServiceAndSave();
-        values.AddRange(Value);
+        ICollection<T> serviceValues = await GetFromServiceAndSave(keys, null);
+        values.AddRange(serviceValues);
       }
       else
       {
@@ -44,64 +41,57 @@ namespace CacheLibary.Models.BaseGet
       }
       return values;
     }
-    protected override async Task GetFromPersistentAndSave()
+    protected async Task<T> GetFromPersistentAndSave(IKey<K> singleKey, T singleValue)
     {
-      if (ValueIsSet())
-        return;
-      await GetFromPersistent();
-      if (ValueIsSet())
-        SaveOneToMemory();
+      if (ValueIsSet(singleValue))
+        return singleValue;
+      singleValue = await GetFromPersistent(singleKey);
+      if (ValueIsSet(singleValue))
+        SaveToMemory(singleKey, singleValue);
+      return singleValue;
     }
-    protected override void GetFromMemory()
+    protected T GetFromMemory(IKey<K> singleKey)
     {
-      SingleValue = MemoryManager.Get<T, K>(SingleKey);
+      return MemoryManager.Get<T, K>(singleKey);
     }
-    protected override async Task GetFromPersistent()
+    protected virtual async Task<T> GetFromPersistent(IKey<K> singleKey)
     {
-      SingleValue = await PersistentManager.Get<T, K>(SingleKey);
+      return await PersistentManager.Get<T, K>(singleKey);
     }
-    protected override void SaveToPersistent()
+    protected override void SaveToPersistent(IKey<IEnumerable<K>> key, ICollection<T> value)
     {
-      foreach(T value in Value)
+      foreach (T singleValue in value)
       {
-        SingleValue = value;
-        LoadKeyFromCurrentValue();
-        SaveOneToPersistent();
+        IKey<K> singleKey = LoadKeyFromCurrentValue(singleValue);
+        SaveToPersistent(singleKey, singleValue);
       }
     }
-    protected override void ClearPropertys()
+
+    protected virtual void SaveToPersistent(IKey<K> singleKey, T singleValue)
     {
-      SingleValue = default;
-      SingleKey = null;
+      PersistentManager.Save(singleKey, singleValue, Options);
     }
-    protected virtual void SaveOneToPersistent()
+    protected override void SaveToMemory(IKey<IEnumerable<K>> key, ICollection<T> value)
     {
-      PersistentManager.Save(SingleKey, SingleValue, Options);
-    }
-    protected override void SaveToMemory()
-    {
-      foreach (T value in Value)
+      foreach (T singleValue in value)
       {
-        SingleValue = value;
-        LoadKeyFromCurrentValue();
-        SaveOneToMemory();
+        IKey<K> singleKey = LoadKeyFromCurrentValue(singleValue);
+        SaveToMemory(singleKey, singleValue);
       }
     }
-    protected virtual void SaveOneToMemory()
+    protected virtual void SaveToMemory(IKey<K> singleKey, T singleValue)
     {
-      MemoryManager.Save(SingleKey, SingleValue, Options);
+      MemoryManager.Save(singleKey, singleValue, Options);
     }
-    protected override void UpdateExpiration()
+    protected void UpdateExpiration(IKey<K> singleKey, T singleValue)
     {
-      if (ValueIsSet())
-        PersistentManager.UpdateExpiration(SingleKey);
+      if (ValueIsSet(singleValue))
+        PersistentManager.UpdateExpiration(singleKey);
     }
-    protected override bool ValueIsSet()
+    protected bool ValueIsSet(T singleValue)
     {
-      if (base.ValueIsSet())
-        return true;
-      return !IsNull(SingleValue);
+      return !IsNull(singleValue);
     }
-    protected abstract void LoadKeyFromCurrentValue();
+    protected abstract IKey<K> LoadKeyFromCurrentValue(T singleValue);
   }
 }

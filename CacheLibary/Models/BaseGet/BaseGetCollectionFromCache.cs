@@ -13,19 +13,19 @@ namespace CacheLibary.Models.BaseGet
     {
     }
 
-    protected override async Task GetFromPersistent()
+    protected override async Task<ICollection<T>> GetFromPersistent(IKey<K> key)
     {
-      Value = await PersistentManager.GetCollection<T, K>(Key);
+      return await PersistentManager.GetCollection<T, K>(key);
     }
-    protected override void SaveToPersistent()
+    protected override void SaveToPersistent(IKey<K> key, ICollection<T> value)
     {
-      PersistentManager.SaveCollection(Key, Value, Options);
+      PersistentManager.SaveCollection(key, value, Options);
     }
-    protected override bool ValueIsSet()
+    protected override bool ValueIsSet(ICollection<T> value)
     {
-      if (!base.ValueIsSet())
+      if (!base.ValueIsSet(value))
         return false;
-      return Value.Any();
+      return value.Any();
     }
 
   }

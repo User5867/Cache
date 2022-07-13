@@ -11,13 +11,13 @@ namespace CacheLibary.Models
     internal BaseGetFromCacheExternal(IOptions options) : base(options)
     {
     }
-    protected override async Task GetFromPersistent()
+    protected override async Task<T> GetFromPersistent(IKey<K> key)
     {
-      Value = await PersistentManager.Get<T, D, K>(Key);
+      return await PersistentManager.Get<T, D, K>(key);
     }
-    protected override void SaveToPersistent()
+    protected override void SaveToPersistent(IKey<K> key, T value)
     {
-      PersistentManager.Save<T, D, K>(Key, Value, Options);
+      PersistentManager.Save<T, D, K>(key, value, Options);
     }
   }
 }

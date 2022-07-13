@@ -39,10 +39,10 @@ namespace CacheLibary.Models.Functions
     {
       return HashFunctions.GetFirstFreeIndex<Key>(hashcode);
     }
-    public static async Task<Key> CreateAndGetKey<K>(IKey<K> key, IOptions options)
+    public static Key CreateAndGetKey<K>(SQLiteConnection transaction, IKey<K> key, IOptions options)
     {
       Key k = new Key() { ObjectKey = Key<K>.GetObjectKey(key), Hashcode = GetHashcode(key), Id = GetFirstFreeKeyIndex(key) };
-      await ExpirationFunctions.CreateExpiration(k, options);
+      ExpirationFunctions.CreateExpiration(transaction, k, options);
       return k;
     }
   }

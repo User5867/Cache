@@ -15,20 +15,16 @@ using Xamarin.Forms;
 
 namespace CacheLibary.Models
 {
+
   internal class MemoryCacheManager : IMemoryCacheManager
   {
-    private MemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 20000, TrackStatistics = true });
-    private delegate Dictionary<IKey<object>, object> GetCache();
+    private MemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 20000, TrackStatistics = true, ExpirationScanFrequency = TimeSpan.FromMinutes(1) });
     public static IMemoryCacheManager Instance = new MemoryCacheManager();
 
     private MemoryCacheManager()
     {
       ReadFromFile();
       Run();
-    }
-    public T TryGet<T, K>(IKey<K> key)
-    {
-      return _memoryCache.Get<T>(key);
     }
 
     public T Get<T, K>(IKey<K> key)
@@ -38,24 +34,15 @@ namespace CacheLibary.Models
 
     public void Save<T, K>(IKey<K> key, T value, IOptions options)
     {
-      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = 1, Priority = options.Priority.Priority };
+      long size = 1;
+      if (value is ICollection c)
+        size = c.Count;
+      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = size, Priority = options.Priority.Priority };
       if (options.Expires is IExpires expires)
       {
         entryOptions.SlidingExpiration = expires.MemorySlidingExpiration;
         entryOptions.AbsoluteExpirationRelativeToNow = expires.MemoryExpiration;
       }
-
-      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
-    }
-    public void Save<T, K>(IKey<K> key, ICollection<T> value, IOptions options)
-    {
-      MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = value.Count, Priority = options.Priority.Priority };
-      if (options.Expires is IExpires expires)
-      {
-        entryOptions.SlidingExpiration = expires.MemorySlidingExpiration;
-        entryOptions.AbsoluteExpirationRelativeToNow = expires.MemoryExpiration;
-      }
-
       _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
     }
     private bool _isRunning;
@@ -85,10 +72,10 @@ namespace CacheLibary.Models
       foreach (var entry in keyValuePairs)
       {
         Type t = entry.Key.ObjectType;
+        Type tc = typeof(ICollection<>).MakeGenericType(t);
         MemoryCacheEntryOptions m = new MemoryCacheEntryOptions
         {
           AbsoluteExpiration = entry.Value.AbsoluteExpiration,
-          AbsoluteExpirationRelativeToNow = entry.Value.AbsoluteExpirationRelativeToNow,
           Priority = entry.Value.Priority,
           Size = entry.Value.Size,
           SlidingExpiration = entry.Value.SlidingExpiration
@@ -96,7 +83,16 @@ namespace CacheLibary.Models
         m.ExpirationTokens.ToList().AddRange(entry.Value.ExpirationTokens);
         m.PostEvictionCallbacks.ToList().AddRange(entry.Value.PostEvictionCallbacks);
         MethodInfo mi = methodInfo.MakeGenericMethod(t);
-        object v = JsonConvert.DeserializeObject(entry.Value.Value.ToString(), t);
+        object v;
+        try
+        {
+          v = JsonConvert.DeserializeObject(entry.Value.Value.ToString(), t);
+        }
+        catch
+        {
+          v = JsonConvert.DeserializeObject(entry.Value.Value.ToString(), tc);
+          mi = methodInfo.MakeGenericMethod(tc);
+        }         
         _ = mi.Invoke(_memoryCache, new object[] { _memoryCache, entry.Key, v, m });
       }
     }

@@ -20,20 +20,20 @@ namespace CacheLibary.Options.Material.Functions
     }
     public override async Task<SysPro.Client.WebApi.Generated.Sprinter.Material> Get(string key)
     {
-      return await Get(new MaterialKey<string>(key, "MaterialNumber"));
+      return await Get(new MaterialKey<string>(key, "materialNumber"));
     }
-    protected override async Task GetFromService()
+    protected override async Task<SysPro.Client.WebApi.Generated.Sprinter.Material> GetFromService(IKey<string> key)
     {
       var res = await DepCon.Scope.Resolve<ISPRINTER_Client>()
       .GetMaterialByIdentifierAsync(new GetMaterialByIdentifierBody
       {
         Userinfo = new UserInfoFac<UserInfo>().Build(),
         MaterialIndentifierType = MaterialIndentifierTypes._0,
-        Value = Key.KeyValue
+        Value = key.KeyValue
       });
       if (res.Success)
-        Value = res.Material;
-      //Value = new SysPro.Client.WebApi.Generated.Sprinter.Material { MaterialName = Key.KeyValue, EanList = new List<MaterialEAN> { new MaterialEAN { Ean = "test", Sku = Key.KeyValue } } };
+        return res.Material;
+      return null;
     }
   }
 }

@@ -10,9 +10,7 @@ namespace CacheLibary.Models
 {
   internal abstract class BaseGetFromCache<T, K> : IBaseGetFromCache<T, K>
   {
-    protected T Value { get; set; }
     protected IOptions Options { get; private set; }
-    protected IKey<K> Key { get; set; }
     protected IMemoryCacheManager MemoryManager { get; } = MemoryCacheManager.Instance;
     protected IPersistentCacheManager PersistentManager { get; } = PersistentCacheManager.Instance;
     internal BaseGetFromCache(IOptions options)
@@ -22,85 +20,80 @@ namespace CacheLibary.Models
 
     protected virtual async Task<T> Get(IKey<K> key, bool offline = false)
     {
-      ClearPropertys();
-      Key = key;
-      GetFromMemory();
-      await GetFromPersistentAndSave();
-      UpdateExpiration();
+      T value = GetFromMemory(key);
+      value = await GetFromPersistentAndSave(key, value);
+      UpdateExpiration(key, value);
       if(!offline)
-        await GetFromServiceAndSave();
-      return Value;
+        value = await GetFromServiceAndSave(key, value);
+      return value;
     }
 
-    protected virtual void ClearPropertys()
+    protected virtual bool ValueIsSet(T value)
     {
-      Value = default;
-      Key = null;
-    }
-    protected virtual bool ValueIsSet()
-    {
-      return !IsNull(Value);
+      return !IsNull(value);
     }
     protected bool IsNull(object t)
     {
       return t == null;
     }
-    protected virtual void GetFromMemory()
+    protected virtual T GetFromMemory(IKey<K> key)
     {
-      Value = MemoryManager.Get<T, K>(Key);
+      return MemoryManager.Get<T, K>(key);
     }
-    protected virtual void SaveToPersistent()
+    protected virtual void SaveToPersistent(IKey<K> key, T value)
     {
-      PersistentManager.Save(Key, Value, Options);
+      PersistentManager.Save(key, value, Options);
     }
-    protected virtual void SaveToMemory()
+    protected virtual void SaveToMemory(IKey<K> key, T value)
     {
-      MemoryManager.Save(Key, Value, Options);
+      MemoryManager.Save(key, value, Options);
     }
-    protected virtual async Task GetFromPersistentAndSave()
+    protected virtual async Task<T> GetFromPersistentAndSave(IKey<K> key, T value)
     {
-      if (ValueIsSet())
-        return;
-      await GetFromPersistent();
-      if (ValueIsSet())
-        SaveToMemory();
-    }
-
-    protected virtual void UpdateExpiration()
-    {
-      if (ValueIsSet())
-        PersistentManager.UpdateExpiration(Key);
+      if (ValueIsSet(value))
+        return default;
+      value = await GetFromPersistent(key);
+      if (ValueIsSet(value))
+        SaveToMemory(key, value);
+      return value;
     }
 
-    protected async Task GetFromServiceAndSave()
+    protected virtual void UpdateExpiration(IKey<K> key, T value)
     {
-      if (ValueIsSet())
-        return;
+      if (ValueIsSet(value))
+        PersistentManager.UpdateExpiration(key);
+    }
+
+    protected async Task<T> GetFromServiceAndSave(IKey<K> key, T value)
+    {
+      if (ValueIsSet(value))
+        return value;
       try
       {
-        await GetFromService();
+        value = await GetFromService(key);
       }
       catch (Exception e)
       {
         System.Diagnostics.Debug.Write("[BaseGetFromCache.GetFromService]" + e.Message);
-        return; 
+        return value; 
       }
-      
-      if (ValueIsSet())
-        SaveToCache();
+      SaveToCache(key, value);
+      return value;
     }
 
-    private void SaveToCache()
+    private void SaveToCache(IKey<K> key, T value)
     {
-      SaveToMemory();
-      SaveToPersistent();
+      if (!ValueIsSet(value))
+        return;
+      SaveToMemory(key, value);
+      SaveToPersistent(key, value);
     }
 
-    protected async virtual Task GetFromPersistent()
+    protected async virtual Task<T> GetFromPersistent(IKey<K> key)
     {
-      Value = await PersistentManager.Get<T, K>(Key);
+      return await PersistentManager.Get<T, K>(key);
     }
-    protected abstract Task GetFromService();
+    protected abstract Task<T> GetFromService(IKey<K> key);
     public abstract Task<T> Get(K key);
 
     public IBaseGetFromCache<T, K1> GetBaseGetFromCache<K1>()

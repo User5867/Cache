@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CacheLibary.Models
 {
-  internal abstract class Cache<T, D> : Cache<T> where D : new()
+  internal abstract class Cache<T, D> : Cache<T> where D : IHash, new()
   {
     protected new Dictionary<int, IBaseGetFromCacheExternal<T, D>> _getFromCache = new Dictionary<int, IBaseGetFromCacheExternal<T, D>>();
     protected new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>> _getCollectionFromCache = new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>>();
@@ -28,6 +28,8 @@ namespace CacheLibary.Models
     protected async void RunPersistentExpiration()
     {
       if (_isRunning)
+        return;
+      if (Options.Expires == null)
         return;
       _isRunning = true;
       while (_isRunning)

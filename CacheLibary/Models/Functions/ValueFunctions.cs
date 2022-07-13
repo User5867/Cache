@@ -1,6 +1,7 @@
 ﻿using CacheLibary.DAOs;
 using CacheLibary.Interfaces;
 using SQLite;
+using SQLiteNetExtensions.Extensions;
 using SQLiteNetExtensionsAsync.Extensions;
 using System;
 using System.Collections.Generic;
@@ -32,12 +33,12 @@ namespace CacheLibary.Models.Functions
       int? valueId = await GetValueId(k.Id);
       if (!valueId.HasValue)
         return default;
-      return await GetValueByIndex<D>(valueId.Value);
+      return await TryGetValueByIndex<D>(valueId.Value);
     }
 
     private static async Task<int?> GetValueId(int keyId)
     {
-      return (await _db.Table<KeyValue>().Where(kv => kv.KeyId == keyId).FirstOrDefaultAsync()).ValueId;
+      return (await _db.Table<KeyValue>().Where(kv => kv.KeyId == keyId).FirstOrDefaultAsync())?.ValueId;
     }
 
     private static async Task<IEnumerable<int>> GetValueIds(int keyId)
@@ -50,29 +51,54 @@ namespace CacheLibary.Models.Functions
       return (await _db.Table<KeyValue>().Where(kv => keyIds.Contains(kv.KeyId)).ToListAsync()).Select(kv => kv.ValueId).Distinct();
     }
 
+    private static async Task<T> TryGetValueByIndex<T>(int id) where T : new()
+    {
+      try
+      {
+        return await GetValueByIndex<T>(id);
+      }
+      catch
+      {
+        return default;
+      }
+    }
     private static async Task<T> GetValueByIndex<T>(int id) where T : new()
     {
       return await _db.GetWithChildrenAsync<T>(id);
     }
-    public static async void SaveNewValue<T, K>(IKey<K> key, T value, IOptions options)
+    private static async Task SaveNewValue<T, K>(IKey<K> key, T value, IOptions options)
     {
-      Key k = await KeyFunctions.CreateAndGetKey(key, options);
-      Value v = await CreateAndGetValue(value);
-      AddKeyToValue(k, v);
+      await _db.RunInTransactionAsync(t =>
+      {
+        Key k = KeyFunctions.CreateAndGetKey(t, key, options);
+        Value v = CreateAndGetValue(t, value);
+        AddKeyToValue(t, k, v);
+      });
+    }
+    internal static async void TrySaveNewValue<T, K>(IKey<K> key, T value, IOptions options)
+    {
+      try
+      {
+        await SaveNewValue(key, value, options);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Fail(e.Message);
+      }
     }
 
-    private static async Task<Value> CreateAndGetValue<T>(T value)
+    private static Value CreateAndGetValue<T>(SQLiteConnection transaction, T value)
     {
       Value v = new Value() { Object = value };
-      await _db.InsertWithChildrenAsync(v);
+      transaction.InsertWithChildren(v);
       return v;
     }
 
-    private static async Task<D> CreateAndGetValue<T, D>(T value) where D : ICustomOptionDAO<T>, T, new()
+    private static D CreateAndGetValue<T, D>(SQLiteConnection transaction, T value) where D : ICustomOptionDAO<T>, T, new()
     {
       D v = new D().CreateInstance<D>(value);
       v.Id = HashFunctions.GetFirstFreeIndex<D>(v.Hashcode);
-      await _db.InsertWithChildrenAsync(v);
+      transaction.InsertWithChildren(v);
       return v;
     }
     internal static async Task<ICollection<T>> GetValues<T, K>(IKey<K> key)
@@ -87,42 +113,82 @@ namespace CacheLibary.Models.Functions
       }
       return retVal;
     }
-
-    internal static async void SaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
+    private static async Task SaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
     {
-      Key k = await KeyFunctions.CreateAndGetKey(key, options);
-      ICollection<Value> v = await CreateAndGetValues(values);
-      foreach (Value value in v)
+      await _db.RunInTransactionAsync(t =>
       {
-        AddKeyToValue(k, value);
+        Key k = KeyFunctions.CreateAndGetKey(t, key, options);
+        ICollection<Value> v = CreateAndGetValues(t, values);
+        foreach (Value value in v)
+        {
+          AddKeyToValue(t, k, value);
+        }
+      });
+    }
+    internal static async void TrySaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
+    {
+      try
+      {
+        await SaveNewValues(key, values, options);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Fail(e.Message);
+      }
+      
+    }
+    private static async Task SaveNewValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    {
+      await _db.RunInTransactionAsync(t =>
+      {
+        Key k = KeyFunctions.CreateAndGetKey(t, key, options);
+        SaveNewValue<T, D, K>(t, k, value);
+      });
+    }
+    internal static async void TrySaveNewValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    {
+      try
+      {
+        await SaveNewValue<T, D, K>(key, value, options);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Fail(e.Message);
       }
     }
 
-    internal static async void SaveNewValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
-    {
-      Key k = await KeyFunctions.CreateAndGetKey(key, options);
-      SaveNewValue<T, D, K>(k, value);
-    }
-
-    private static async void SaveNewValue<T, D, K>(Key key, T value) where D : ICustomOptionDAO<T>, T, new()
+    private static async void SaveNewValue<T, D, K>(SQLiteConnection transaction, Key key, T value) where D : ICustomOptionDAO<T>, T, new()
     {
       D v = await HashFunctions.GetByHashcode<D, T>(new D().CreateInstance<D>(value).Hashcode, value);
       if (v == null)
-        v = await CreateAndGetValue<T, D>(value);
-      AddKeyToValue<D, T>(key, v);
+        v = CreateAndGetValue<T, D>(transaction, value);
+      AddKeyToValue<D, T>(transaction, key, v);
     }
 
-    private static void AddKeyToValue<D, T>(Key k, D v) where D : ICustomOptionDAO<T>, T, new()
+    private static void AddKeyToValue<D, T>(SQLiteConnection transaction, Key k, D v) where D : ICustomOptionDAO<T>, T, new()
     {
-      AddKeyValue(k.Id, v.Id);
+      AddKeyValue(transaction, k.Id, v.Id);
     }
-
-    internal static async void SaveNewValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    private static async Task SaveNewValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      Key k = await KeyFunctions.CreateAndGetKey(key, options);
-      foreach (T value in values)
+      await _db.RunInTransactionAsync(t =>
       {
-        SaveNewValue<T, D, K>(k, value);
+        Key k = KeyFunctions.CreateAndGetKey(t, key, options);
+        foreach (T value in values)
+        {
+          SaveNewValue<T, D, K>(t, k, value);
+        }
+      });
+    }
+    internal static async void TrySaveNewValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    {
+      try
+      {
+        await SaveNewValues<T, D, K>(key, values, options);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Fail(e.Message);
       }
     }
 
@@ -133,33 +199,36 @@ namespace CacheLibary.Models.Functions
         return default;
       IEnumerable<int> valueIds = await GetValueIds(k.Id);
       ICollection<T> values = new List<T>();
-      foreach(int id in valueIds)
+      foreach (int id in valueIds)
       {
-        values.Add(await GetValueByIndex<D>(id));
+        D v = await TryGetValueByIndex<D>(id);
+        if (v == null)
+          return new List<T>();
+        values.Add(v);
       }
       return values;
     }
 
-    private static async Task<ICollection<Value>> CreateAndGetValues<T>(ICollection<T> values)
+    private static ICollection<Value> CreateAndGetValues<T>(SQLiteConnection transaction, ICollection<T> values)
     {
       ICollection<Value> retVal = new List<Value>();
       foreach (T value in values)
       {
-        retVal.Add(await CreateAndGetValue(value));
+        retVal.Add(CreateAndGetValue(transaction, value));
       }
       return retVal;
     }
 
 
-    private static void AddKeyToValue(Key k, Value v)
+    private static void AddKeyToValue(SQLiteConnection transaction, Key k, Value v)
     {
-      AddKeyValue(k.Id, v.Id);
+      AddKeyValue(transaction, k.Id, v.Id);
     }
 
-    private static void AddKeyValue(int keyId, int valueId)
+    private static void AddKeyValue(SQLiteConnection transaction, int keyId, int valueId)
     {
       KeyValue keyValue = new KeyValue() { KeyId = keyId, ValueId = valueId };
-      _ = _db.InsertAsync(keyValue);
+      _ = transaction.Insert(keyValue);
     }
   }
 }
