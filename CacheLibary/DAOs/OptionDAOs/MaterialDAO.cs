@@ -35,7 +35,7 @@ namespace CacheLibary.DAOs.OptionDAOs
       Segment = material.Segment;
       PropertyList = material.PropertyList;
       EanList = material.EanList;
-      Hashcode = EanList.FirstOrDefault().Ean.GetHashCode();
+      Hashcode = MaterialNumber.GetHashCode();
     }
 
     public MaterialDAO()
@@ -60,7 +60,7 @@ namespace CacheLibary.DAOs.OptionDAOs
     {//TODO: add more comparer
       if (other == null)
         return false;
-      return EanList.FirstOrDefault().Ean == other.EanList.FirstOrDefault().Ean;
+      return MaterialNumber == other.MaterialNumber;
     }
 
     public D CreateInstance<D>(Material value) where D : Material, ICustomOptionDAO<Material>

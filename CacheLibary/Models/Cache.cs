@@ -40,7 +40,7 @@ namespace CacheLibary.Models
     }
     protected async virtual Task DeleteAllExpired()
     {
-      throw new NotImplementedException();
+      await PersistentCacheManager.Instance.DeleteAllExpired(typeof(T));
     }
   }
 }

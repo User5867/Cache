@@ -1,5 +1,6 @@
 ﻿using CacheLibary.DAOs;
 using CacheLibary.Interfaces;
+using CacheLibary.Interfaces.Options;
 using SQLite;
 using SQLiteNetExtensions.Extensions;
 using SQLiteNetExtensionsAsync.Extensions;
@@ -23,19 +24,25 @@ namespace CacheLibary.Models.Functions
     }
     private static bool TryGetPersitentExperation(Key key, IOptions options, out Expiration expiration)
     {
-      TimeSpan? expires = options.Expires?.PersitentExperation;
-      if (expires.HasValue)
+      //TimeSpan? expires = options.Expires?.PersitentExperation;
+      if(options is IExpires expires)
+      {
+        DateTime? totalExpiration = null;
+        if (expires.PersitentExperation.HasValue)
+          totalExpiration = DateTime.UtcNow.Add(expires.PersitentExperation.Value);
         expiration = new Expiration()
         {
           KeyId = key.Id,
-          TotalExpiration = DateTime.UtcNow.Add(expires.Value),
+          TotalExpiration = totalExpiration,
           SlidingExpiration = options.Expires.PersistenSlidingExpiration,
           LastAccess = DateTime.UtcNow,
           Key = key
         };
+      }
+        
       else
         expiration = null;
-      return expires.HasValue;
+      return expiration != null;
     }
 
     internal static void CreateExpiration(SQLiteConnection transaction, Key key, IOptions options)
@@ -145,12 +152,36 @@ namespace CacheLibary.Models.Functions
     internal static async Task DeleteExpired<D>(Type objectType) where D : IHash, new()
     {
       ICollection<Key> keys = await GetExpiredKeys(objectType);
-      IEnumerable<int> keyIds = keys.Select(k => k.Id);
+      IEnumerable<int> keyIds = GetKeyIds(keys);
       IEnumerable<int> valueIds = await ValueFunctions.GetValueIds(keyIds);
       SetAllKeyBlobsExpired(keys);
       await TryDeleteExpiredValues<D>(objectType, keys, keyIds, valueIds);
     }
 
+    private static IEnumerable<int> GetKeyIds(ICollection<Key> keys)
+    {
+      return keys.Select(k => k.Id);
+    }
+
+    internal static async Task DeleteExpired(Type objectType)
+    {
+      ICollection<Key> keys = await GetExpiredKeys(objectType);
+      IEnumerable<int> keyIds = GetKeyIds(keys);
+      IEnumerable<int> valueIds = await ValueFunctions.GetValueIds(keyIds);
+      SetAllKeyBlobsExpired(keys);
+      await TryDeleteExpiredValues(keys, keyIds, valueIds);
+    }
+    private static async Task TryDeleteExpiredValues(ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds)
+    {
+      try
+      {
+        await DeleteExpiredValues(keys, keyIds, valueIds);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Fail(e.Message);
+      }
+    }
     private static async Task TryDeleteExpiredValues<D>(Type objectType, ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds) where D : IHash, new()
     {
       try
@@ -161,6 +192,15 @@ namespace CacheLibary.Models.Functions
       {
         System.Diagnostics.Debug.Fail(e.Message);
       }
+    }
+    private static async Task DeleteExpiredValues(ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds)
+    {
+      await _db.RunInTransactionAsync(t =>
+      {
+        _ = t.UpdateAll(keys);
+        DeleteAllKeyValuesByKeyIds(t, keyIds);
+        t.DeleteAllIds<Value>(GetObjectIEnumerable(valueIds));
+      });
     }
     private static async Task DeleteExpiredValues<D>(Type objectType, ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds) where D : IHash, new()
     {
@@ -194,6 +234,11 @@ namespace CacheLibary.Models.Functions
     private static async Task<IEnumerable<object>> GetExpiredValueIdsAsObjects(Type objectType, IEnumerable<int> valueIds)
     {
       IEnumerable<int> expiredvalueIds = await GetExpiredValueIds(objectType, valueIds);
+      return GetObjectIEnumerable(expiredvalueIds);
+    }
+
+    private static IEnumerable<object> GetObjectIEnumerable(IEnumerable<int> expiredvalueIds)
+    {
       return expiredvalueIds.Select(v => (object)v);
     }
 

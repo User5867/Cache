@@ -11,13 +11,14 @@ namespace CacheLibary.Models.BaseGet.WithList
     internal BaseGetCollectionWithListFromCacheExternal(IOptions options) : base(options)
     {
     }
-    protected override async Task<T> GetFromPersistent(IKey<K> singleKey)
+    protected override async Task<IEnumerable<T>> GetFromPersistent(IEnumerable<IKey<K>> keys)
     {
-      return await PersistentManager.Get<T, D, K>(singleKey);
+      return await PersistentManager.GetCollection<T, D, K>(keys);
     }
-    protected override void SaveToPersistent(IKey<K> singleKey, T singleValue)
+
+    protected override async Task SaveToPersistent(IKey<K> singleKey, T singleValue)
     {
-      PersistentManager.Save<T, D, K>(singleKey, singleValue, Options);
+      await PersistentManager.Save<T, D, K>(singleKey, singleValue, Options);
     }
   }
 }

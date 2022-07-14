@@ -54,6 +54,11 @@ namespace Cache
       InitCommands();
       ICacheManager cacheManager = CacheManager.Instance;
       _materialCache = cacheManager.GetCache<IMaterialCache>();
+      Task.Run(() =>
+      {
+        new Test().Test1();
+      });
+      
     }
 
     private void InitCommands()

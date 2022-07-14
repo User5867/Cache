@@ -11,7 +11,6 @@ namespace CacheLibary.Models.Functions
 {
   internal class KeyFunctions
   {
-    private static SQLiteAsyncConnection _db = PersistentCacheManager.Instance.GetDatabase();
     public static int GetHashcode<K>(IKey<K> key)
     {
       return key.GetHashCode();
@@ -38,6 +37,10 @@ namespace CacheLibary.Models.Functions
     private static int GetFirstFreeKeyIndex(int hashcode)
     {
       return HashFunctions.GetFirstFreeIndex<Key>(hashcode);
+    }
+    public static string GetKeyBlob<K>(IKey<K> key)
+    {
+      return Newtonsoft.Json.JsonConvert.SerializeObject(key);
     }
     public static Key CreateAndGetKey<K>(SQLiteConnection transaction, IKey<K> key, IOptions options)
     {

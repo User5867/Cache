@@ -25,15 +25,26 @@ namespace CacheLibary.Models.Functions
         return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(o.ToString());
       return default;
     }
+    internal static async Task<ICollection<T>> GetValues<T, D, K>(IEnumerable<IKey<K>> keys) where D : ICustomOptionDAO<T>, T, new()
+    {
+      var mapping = await _db.GetMappingAsync<D>();
+      List<int> hashcodes = new List<int>();
+      List<string> blobs = new List<string>();
+      foreach(IKey<K> key in keys)
+      {
+        hashcodes.Add(KeyFunctions.GetHashcode(key));
+        blobs.Add(KeyFunctions.GetKeyBlob(key));
+      } 
+      IEnumerable<D> ds = await _db.QueryAsync<D>(string.Format(_getValueByKeySelect, mapping.TableName), hashcodes, blobs);
+      return ds.Cast<T>().ToList();
+    }
+    private const string _getValueByKeySelect = "select * from {0} where Id = (select ValueId from KeyValue where KeyId = (select Id From Key where Deleted = false AND Hashcode = ? AND ObjectKeyBlob = '?' ));";
     internal static async Task<D> GetValue<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
     {
-      Key k = await KeyFunctions.GetKey(key);
-      if (k == null)
-        return default;
-      int? valueId = await GetValueId(k.Id);
-      if (!valueId.HasValue)
-        return default;
-      return await TryGetValueByIndex<D>(valueId.Value);
+      var mapping = await _db.GetMappingAsync<D>();
+      int hashcode = KeyFunctions.GetHashcode(key);
+      string s = KeyFunctions.GetKeyBlob(key);
+      return await _db.FindWithQueryAsync<D>(string.Format(_getValueByKeySelect, mapping.TableName),  hashcode, s);
     }
 
     private static async Task<int?> GetValueId(int keyId)
@@ -66,7 +77,7 @@ namespace CacheLibary.Models.Functions
     {
       return await _db.GetWithChildrenAsync<T>(id);
     }
-    private static async Task SaveNewValue<T, K>(IKey<K> key, T value, IOptions options)
+    private static async Task SaveValue<T, K>(IKey<K> key, T value, IOptions options)
     {
       await _db.RunInTransactionAsync(t =>
       {
@@ -75,11 +86,11 @@ namespace CacheLibary.Models.Functions
         AddKeyToValue(t, k, v);
       });
     }
-    internal static async void TrySaveNewValue<T, K>(IKey<K> key, T value, IOptions options)
+    internal static async Task TrySaveValue<T, K>(IKey<K> key, T value, IOptions options)
     {
       try
       {
-        await SaveNewValue(key, value, options);
+        await SaveValue(key, value, options);
       }
       catch (Exception e)
       {
@@ -106,14 +117,14 @@ namespace CacheLibary.Models.Functions
       Key k = await KeyFunctions.GetKey(key);
       if (k == null)
         return default;
-      ICollection<T> retVal = new List<T>();
+      ICollection<T> values = new List<T>();
       foreach (Value value in k.Values)
       {
-        retVal.Add(Newtonsoft.Json.JsonConvert.DeserializeObject<T>(value.ObjectBlob));
+        values.Add(Newtonsoft.Json.JsonConvert.DeserializeObject<T>(value.ObjectBlob));
       }
-      return retVal;
+      return values;
     }
-    private static async Task SaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
+    private static async Task SaveValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
     {
       await _db.RunInTransactionAsync(t =>
       {
@@ -125,11 +136,11 @@ namespace CacheLibary.Models.Functions
         }
       });
     }
-    internal static async void TrySaveNewValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
+    internal static async Task TrySaveValues<K, T>(IKey<K> key, ICollection<T> values, IOptions options)
     {
       try
       {
-        await SaveNewValues(key, values, options);
+        await SaveValues(key, values, options);
       }
       catch (Exception e)
       {
@@ -137,19 +148,19 @@ namespace CacheLibary.Models.Functions
       }
       
     }
-    private static async Task SaveNewValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    private static async Task SaveValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
       await _db.RunInTransactionAsync(t =>
       {
         Key k = KeyFunctions.CreateAndGetKey(t, key, options);
-        SaveNewValue<T, D, K>(t, k, value);
+        SaveValue<T, D, K>(t, k, value);
       });
     }
-    internal static async void TrySaveNewValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    internal static async Task TrySaveValue<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
       try
       {
-        await SaveNewValue<T, D, K>(key, value, options);
+        await SaveValue<T, D, K>(key, value, options);
       }
       catch (Exception e)
       {
@@ -157,7 +168,7 @@ namespace CacheLibary.Models.Functions
       }
     }
 
-    private static async void SaveNewValue<T, D, K>(SQLiteConnection transaction, Key key, T value) where D : ICustomOptionDAO<T>, T, new()
+    private static async Task SaveValue<T, D, K>(SQLiteConnection transaction, Key key, T value) where D : ICustomOptionDAO<T>, T, new()
     {
       D v = await HashFunctions.GetByHashcode<D, T>(new D().CreateInstance<D>(value).Hashcode, value);
       if (v == null)
@@ -169,22 +180,22 @@ namespace CacheLibary.Models.Functions
     {
       AddKeyValue(transaction, k.Id, v.Id);
     }
-    private static async Task SaveNewValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    private static async Task SaveValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
       await _db.RunInTransactionAsync(t =>
       {
         Key k = KeyFunctions.CreateAndGetKey(t, key, options);
         foreach (T value in values)
         {
-          SaveNewValue<T, D, K>(t, k, value);
+          SaveValue<T, D, K>(t, k, value);
         }
       });
     }
-    internal static async void TrySaveNewValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    internal static async Task TrySaveValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
       try
       {
-        await SaveNewValues<T, D, K>(key, values, options);
+        await SaveValues<T, D, K>(key, values, options);
       }
       catch (Exception e)
       {
@@ -203,7 +214,7 @@ namespace CacheLibary.Models.Functions
       {
         D v = await TryGetValueByIndex<D>(id);
         if (v == null)
-          return new List<T>();
+          return null;
         values.Add(v);
       }
       return values;

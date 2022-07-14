@@ -88,20 +88,28 @@ namespace CacheLibary.Models
     {
       await ExpirationFunctions.DeleteExpired<D>(objectType);
     }
-
-    public void Save<T, K>(IKey<K> key, T value, IOptions options)
+    public async Task DeleteAllExpired(Type objectType)
     {
-      ValueFunctions.TrySaveNewValue(key, value, options);
+      await ExpirationFunctions.DeleteExpired(objectType);
+    }
+
+    public async Task Save<T, K>(IKey<K> key, T value, IOptions options)
+    {
+      await ValueFunctions.TrySaveValue(key, value, options);
     }
 
     public async Task<ICollection<T>> GetCollection<T, K>(IKey<K> key)
     {
       return await ValueFunctions.GetValues<T, K>(key);
     }
-
-    public void SaveCollection<T, K>(IKey<K> key, ICollection<T> values, IOptions options)
+    public async Task<ICollection<T>> GetCollection<T, D, K>(IEnumerable<IKey<K>> key) where D : ICustomOptionDAO<T>, T, new()
     {
-      ValueFunctions.TrySaveNewValues(key, values, options);
+      return await ValueFunctions.GetValues<T, D, K>(key);
+    }
+
+    public async Task SaveCollection<T, K>(IKey<K> key, ICollection<T> values, IOptions options)
+    {
+      await ValueFunctions.TrySaveValues(key, values, options);
     }
 
     public async Task<ICollection<T>> GetCollection<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
@@ -109,14 +117,14 @@ namespace CacheLibary.Models
       return await ValueFunctions.GetValues<T, D, K>(key);
     }
 
-    public void Save<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    public async Task Save<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      ValueFunctions.TrySaveNewValue<T, D, K>(key, value, options);
+      await ValueFunctions.TrySaveValue<T, D, K>(key, value, options);
     }
 
-    public void SaveCollection<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    public async Task SaveCollection<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      ValueFunctions.TrySaveNewValues<T, D, K>(key, values, options);
+      await ValueFunctions.TrySaveValues<T, D, K>(key, values, options);
     }
 
     public void UpdateExpiration<K>(IKey<K> key)

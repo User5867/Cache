@@ -37,14 +37,21 @@ namespace CacheLibary.Models
       long size = 1;
       if (value is ICollection c)
         size = c.Count;
+      MemoryCacheEntryOptions entryOptions = GetMemoryCacheEntryOptions(options, size);
+      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
+    }
+
+    private static MemoryCacheEntryOptions GetMemoryCacheEntryOptions(IOptions options, long size)
+    {
       MemoryCacheEntryOptions entryOptions = new MemoryCacheEntryOptions() { Size = size, Priority = options.Priority.Priority };
       if (options.Expires is IExpires expires)
       {
         entryOptions.SlidingExpiration = expires.MemorySlidingExpiration;
         entryOptions.AbsoluteExpirationRelativeToNow = expires.MemoryExpiration;
       }
-      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
+      return entryOptions;
     }
+
     private bool _isRunning;
     private int _saveInterval = 10000;
     private async void Run()

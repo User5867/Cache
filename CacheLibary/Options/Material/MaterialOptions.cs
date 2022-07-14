@@ -9,12 +9,12 @@ namespace CacheLibary.Options.Material
 {
   internal class MaterialOptions : IOptions, IPriority, IExpires
   {
-    public TimeSpan? MemoryExpiration => TimeSpan.FromMinutes(5);
-    public TimeSpan? PersitentExperation => TimeSpan.FromHours(1);
+    public TimeSpan? MemoryExpiration => TimeSpan.FromHours(5);
+    public TimeSpan? PersitentExperation => TimeSpan.FromHours(24);
     public CacheItemPriority Priority => CacheItemPriority.Low;
-    public TimeSpan? MemorySlidingExpiration => null;
+    public TimeSpan? MemorySlidingExpiration => TimeSpan.FromMinutes(10);
 
-    public TimeSpan? PersistenSlidingExpiration => TimeSpan.FromMinutes(10);
+    public TimeSpan? PersistenSlidingExpiration => TimeSpan.FromHours(5);
 
     IPriority IOptions.Priority => this;
     IExpires IOptions.Expires => this;
