@@ -9,5 +9,6 @@ namespace CacheLibary.Interfaces
     string KeyIdentifier { get; }
     K KeyValue { get; }
     Type ObjectType { get; }
+    string KeyBlob { get; }
   }
 }

@@ -4,8 +4,6 @@ using CacheLibary.Interfaces;
 using CacheLibary.Interfaces.CacheManager;
 using CacheLibary.Models.Functions;
 using SQLite;
-using SQLiteNetExtensions.Extensions;
-using SQLiteNetExtensionsAsync.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,7 +82,7 @@ namespace CacheLibary.Models
       return await ValueFunctions.GetValue<T, D, K>(key);
     }
 
-    public async Task DeleteAllExpired<D>(Type objectType) where D : IHash, new()
+    public async Task DeleteAllExpired<D>(Type objectType) where D : ICustomOptionDAO, new()
     {
       await ExpirationFunctions.DeleteExpired<D>(objectType);
     }
@@ -130,6 +128,22 @@ namespace CacheLibary.Models
     public void UpdateExpiration<K>(IKey<K> key)
     {
       ExpirationFunctions.UpdateExperation(key);
+    }
+
+    public async Task SaveCollection<T, D, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options) where D : ICustomOptionDAO<T>, T, new()
+    {
+      await ValueFunctions.TrySaveValues<T, D, K>(keyValues, options);
+    }
+
+    public async Task SaveCollection<T, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options)
+    {
+      await ValueFunctions.TrySaveValues(keyValues, options);
+      //throw new NotImplementedException();
+    }
+
+    public async Task<IEnumerable<T>> GetCollection<T, K>(IEnumerable<IKey<K>> keys)
+    {
+      return await ValueFunctions.GetValues<T, K>(keys);
     }
   }
 }

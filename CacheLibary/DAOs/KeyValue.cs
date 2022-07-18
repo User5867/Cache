@@ -1,4 +1,4 @@
-﻿using SQLiteNetExtensions.Attributes;
+﻿using SQLite;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,9 +7,9 @@ namespace CacheLibary.DAOs
 {
   internal class KeyValue
   {
-    [ForeignKey(typeof(Key))]
+    [Indexed]
     public int KeyId { get; set; }
-    [ForeignKey(typeof(Value))]
+    [Indexed]
     public int ValueId { get; set; }
   }
 }

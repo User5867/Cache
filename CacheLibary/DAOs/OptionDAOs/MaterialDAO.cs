@@ -1,6 +1,6 @@
 ﻿using CacheLibary.Interfaces;
+using Newtonsoft.Json;
 using SQLite;
-using SQLiteNetExtensions.Attributes;
 using SysPro.Client.WebApi.Generated.Sprinter;
 using System;
 using System.Collections.Generic;
@@ -11,12 +11,30 @@ namespace CacheLibary.DAOs.OptionDAOs
 {
   internal class MaterialDAO : Material, ICustomOptionDAO<Material>
   {
-    [TextBlob(nameof(PropertyListBlob))]
+    [Ignore]
     public new ICollection<MaterialProperty> PropertyList { get; set; }
-    public string PropertyListBlob { get; set; }
-    [TextBlob(nameof(EanListBlob))]
+    //private string _propertyListBlob;
+    //public string PropertyListBlob
+    //{
+    //  get => _propertyListBlob;
+    //  set
+    //  {
+    //    _propertyListBlob = value;
+    //    base.PropertyList = JsonConvert.DeserializeObject<ICollection<MaterialProperty>>(PropertyListBlob);
+    //  }
+    //}
+    [Ignore]
     public new ICollection<MaterialEAN> EanList { get; set; }
-    public string EanListBlob { get; set; }
+    //private string _eanListBlob;
+    //public string EanListBlob
+    //{
+    //  get => _eanListBlob;
+    //  set
+    //  {
+    //    _eanListBlob = value;
+    //    base.EanList = JsonConvert.DeserializeObject<ICollection<MaterialEAN>>(EanListBlob);
+    //  }
+    //}
     public MaterialDAO(Material material)
     {
       Price = material.Price;
@@ -33,9 +51,9 @@ namespace CacheLibary.DAOs.OptionDAOs
       PluCustomerNumber = material.PluCustomerNumber;
       PluNr = material.PluNr;
       Segment = material.Segment;
-      PropertyList = material.PropertyList;
-      EanList = material.EanList;
-      Hashcode = MaterialNumber.GetHashCode();
+      //EanListBlob = JsonConvert.SerializeObject(material.EanList);
+      //PropertyListBlob = JsonConvert.SerializeObject(material.PropertyList);
+      UniqueId = MaterialNumber;
     }
 
     public MaterialDAO()
@@ -43,26 +61,10 @@ namespace CacheLibary.DAOs.OptionDAOs
     }
 
     [PrimaryKey]
+    [AutoIncrement]
     public int Id { get; set; }
-    public int Hashcode { get; set; }
-    public bool Deleted { get; set; }
-
-    public override int GetHashCode()
-    {
-      return Hashcode;
-    }
-    public override bool Equals(object obj)
-    {
-      return Equals(obj as Material);
-    }
-
-    public bool Equals(Material other)
-    {//TODO: add more comparer
-      if (other == null)
-        return false;
-      return MaterialNumber == other.MaterialNumber;
-    }
-
+    [Unique]
+    public string UniqueId { get; set; }
     public D CreateInstance<D>(Material value) where D : Material, ICustomOptionDAO<Material>
     {
       return new MaterialDAO(value) as D;

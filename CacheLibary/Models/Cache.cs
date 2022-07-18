@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CacheLibary.Models
 {
-  internal abstract class Cache<T, D> : Cache<T> where D : IHash, new()
+  internal abstract class Cache<T, D> : Cache<T> where D : ICustomOptionDAO, new()
   {
     protected new Dictionary<int, IBaseGetFromCacheExternal<T, D>> _getFromCache = new Dictionary<int, IBaseGetFromCacheExternal<T, D>>();
     protected new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>> _getCollectionFromCache = new Dictionary<int, IBaseGetCollectionFromCacheExternal<T, D>>();

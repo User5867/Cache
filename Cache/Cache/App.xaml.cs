@@ -18,8 +18,6 @@ namespace Cache
       InitializeComponent();
       XF.Material.Forms.Material.Init(this);
       Current.MainPage = new MainPage();
-      NavigationController.Instance.PushModalAsync(new LoadData());
-      
     }
 
     protected override void OnStart()
@@ -27,6 +25,11 @@ namespace Cache
       Task.Run(async () =>
       {
         await CacheHelper.CacheHelper.InitApp();
+        Device.BeginInvokeOnMainThread(() =>
+        {
+          NavigationController.Instance.PushModalAsync(new LoadData());
+        });
+        
       });
     }
 

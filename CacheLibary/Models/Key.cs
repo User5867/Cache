@@ -1,4 +1,5 @@
 ﻿using CacheLibary.Interfaces;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,14 +12,21 @@ namespace CacheLibary.Models
     public string KeyIdentifier { get; }
     public K KeyValue { get; }
     public Type ObjectType { get; }
+    [JsonIgnore]
+    public string KeyBlob { get; private set; }
 
     public Key(string keyIdentifier, K keyValue, Type objectType)
     {
       KeyIdentifier = keyIdentifier;
       KeyValue = keyValue;
       ObjectType = objectType;
+      SetKeyObjectBlob();
     }
 
+    private void SetKeyObjectBlob()
+    {
+      KeyBlob = JsonConvert.SerializeObject(this);
+    }
 
     public override bool Equals(object obj)
     {
@@ -34,6 +42,8 @@ namespace CacheLibary.Models
     }
     public bool Equals(IKey<K> other)
     {
+      if (other == null)
+        return false;
       return KeyIdentifier == other.KeyIdentifier && KeyValue.Equals(other.KeyValue) && ObjectType == other.ObjectType;
     }
     public static Key<object> GetObjectKey(IKey<K> key)

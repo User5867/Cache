@@ -1,27 +1,33 @@
 ﻿using CacheLibary.Interfaces;
 using CacheLibary.Models;
+using Newtonsoft.Json;
 using SQLite;
-using SQLiteNetExtensions.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CacheLibary.DAOs
 {
-  internal class Key : IHash
+  internal class Key
   {
     [PrimaryKey]
+    [AutoIncrement]
     public int Id { get; set; }
-    public int Hashcode { get; set; }
-    public bool Deleted { get; set; }
-    [TextBlob(nameof(ObjectKeyBlob))]
-    public Key<object> ObjectKey { get; set; }
-    public string ObjectKeyBlob { get; set; }
-    [ManyToMany(typeof(KeyValue))]
-    public List<Value> Values { get; set; }
-    [ForeignKey(typeof(Expiration))]
+    [Ignore]
+    public Key<object> ObjectKey { get; private set; }
+    private string _objectKeyBlob;
+    [Unique]
+    public string ObjectKeyBlob
+    {
+      get => _objectKeyBlob;
+      set
+      {
+        _objectKeyBlob = value;
+        ObjectKey = JsonConvert.DeserializeObject<Key<object>>(ObjectKeyBlob);
+      }
+    }
+    [Indexed]
     public int ExpirationId { get; set; }
-    [OneToOne]
-    public Expiration Expiration { get; set; }
+    public bool Deleted { get; set; }
   }
 }

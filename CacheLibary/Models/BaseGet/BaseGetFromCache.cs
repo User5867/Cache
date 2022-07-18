@@ -51,7 +51,7 @@ namespace CacheLibary.Models
     protected virtual async Task<T> GetFromPersistentAndSave(IKey<K> key, T value)
     {
       if (ValueIsSet(value))
-        return default;
+        return value;
       value = await GetFromPersistent(key);
       if (ValueIsSet(value))
         SaveToMemory(key, value);

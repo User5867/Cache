@@ -22,40 +22,38 @@ namespace CacheLibary.Models.BaseGet
       {
         unfoundKeys.Add(new Key<K>(key.KeyIdentifier, k, key.ObjectType));
       }
-      foreach(IKey<K> k in unfoundKeys.ToList())
+      foreach (IKey<K> k in unfoundKeys.ToList())
       {
         T value = GetFromMemory(k);
         if (!ValueIsSet(value))
           continue;
         values.Add(value);
-        unfoundKeys.Remove(k);
+        _ = unfoundKeys.Remove(k);
       }
-      values.AddRange(await GetFromPersistent(unfoundKeys)); //TODO: save to memory
-      //foreach (K k in key.KeyValue)
-      //{
-      //  IKey<K> singleKey = new Key<K>(key.KeyIdentifier, k, key.ObjectType);
-      //  T singleValue = GetFromMemory(singleKey);
-      //  singleValue = await GetFromPersistentAndSave(singleKey, singleValue);
-      //  UpdateExpiration(singleKey, singleValue);
-      //  if (ValueIsSet(singleValue))
-      //    values.Add(singleValue);
-      //  else
-      //    unfoundKeys.Add(k);
-      //}
-      //if (unfoundKeys.Count == 0)
-      //  return values;
-      //Key<IEnumerable<K>> keys = new Key<IEnumerable<K>>(key.KeyIdentifier, unfoundKeys, key.ObjectType);
-      //if (!offline)
-      //{
-      //  ICollection<T> serviceValues = await GetFromServiceAndSave(keys, null);
-      //  if (serviceValues == null)
-      //    return new List<T>();
-      //  values.AddRange(serviceValues);
-      //}
-      //else
-      //{
-      //  return new List<T>();
-      //}
+      if (unfoundKeys.Count == 0)
+        return values;
+      IEnumerable<T> persistentValues = await GetFromPersistent(unfoundKeys);
+      foreach (T value in persistentValues)
+      {
+        IKey<K> foundKey = LoadKeyFromCurrentValue(value);
+        SaveToMemory(foundKey, value);
+        _ = unfoundKeys.Remove(foundKey);
+      }
+      values.AddRange(persistentValues);
+      if (unfoundKeys.Count == 0)
+        return values;
+      Key<IEnumerable<K>> keys = new Key<IEnumerable<K>>(key.KeyIdentifier, unfoundKeys.Select(k => k.KeyValue), key.ObjectType);
+      if (!offline)
+      {
+        ICollection<T> serviceValues = await GetFromServiceAndSave(keys, null);
+        if (serviceValues == null)
+          return new List<T>();
+        values.AddRange(serviceValues);
+      }
+      else
+      {
+        return new List<T>();
+      }
       return values;
     }
     //protected async Task<T> GetFromPersistentAndSave(IKey<K> singleKey, T singleValue)
@@ -73,26 +71,29 @@ namespace CacheLibary.Models.BaseGet
     }
     protected virtual async Task<IEnumerable<T>> GetFromPersistent(IEnumerable<IKey<K>> keys)
     {
-      throw new NotImplementedException();
-      //return await PersistentManager.GetCollection<T, K>(keys);
+      return await PersistentManager.GetCollection<T, K>(keys);
     }
-    protected override async void  SaveToPersistent(IKey<IEnumerable<K>> key, ICollection<T> value)
+    protected override async void SaveToPersistent(IKey<IEnumerable<K>> key, ICollection<T> value)
     {
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
+      ICollection<KeyValuePair<IKey<K>, T>> keyValues = new List<KeyValuePair<IKey<K>, T>>();
       foreach (T singleValue in value)
       {
         IKey<K> singleKey = LoadKeyFromCurrentValue(singleValue);
-        await SaveToPersistent(singleKey, singleValue);
+        keyValues.Add(new KeyValuePair<IKey<K>, T>(singleKey, singleValue));
       }
+      await SaveToPersistent(keyValues);
       Debug.Write("[SaveToPersistent] " + stopwatch.Elapsed.ToString());
       stopwatch.Stop();
     }
 
-    protected virtual async Task SaveToPersistent(IKey<K> singleKey, T singleValue)
+    protected virtual async Task SaveToPersistent(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues)
     {
-      await PersistentManager.Save(singleKey, singleValue, Options);
+      //throw new NotImplementedException();
+      await PersistentManager.SaveCollection(keyValues, Options);
     }
+
     protected override void SaveToMemory(IKey<IEnumerable<K>> key, ICollection<T> value)
     {
       foreach (T singleValue in value)

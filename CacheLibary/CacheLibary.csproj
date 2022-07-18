@@ -10,8 +10,6 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0-preview.4.22229.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="sqlite-net-pcl" Version="1.8.116" />
-    <PackageReference Include="SQLiteNetExtensions" Version="2.1.0" />
-    <PackageReference Include="SQLiteNetExtensions.Async" Version="2.1.0" />
     <PackageReference Include="Xamarin.Forms" Version="5.0.0.2012" />
   </ItemGroup>
 

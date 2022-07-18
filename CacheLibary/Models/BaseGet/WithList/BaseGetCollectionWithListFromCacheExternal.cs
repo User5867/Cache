@@ -15,10 +15,9 @@ namespace CacheLibary.Models.BaseGet.WithList
     {
       return await PersistentManager.GetCollection<T, D, K>(keys);
     }
-
-    protected override async Task SaveToPersistent(IKey<K> singleKey, T singleValue)
+    protected override async Task SaveToPersistent(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues)
     {
-      await PersistentManager.Save<T, D, K>(singleKey, singleValue, Options);
+      await PersistentManager.SaveCollection<T, D, K>(keyValues, Options);
     }
   }
 }
