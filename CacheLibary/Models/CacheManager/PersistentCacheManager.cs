@@ -6,6 +6,8 @@ using CacheLibary.Models.Functions;
 using SQLite;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,11 +53,22 @@ namespace CacheLibary.Models
         });
     }
     internal const int CheckInterval = 60000;
+    private const string WriteToFile = "[{0}] {1} : {2}";
+    private const string DeleteTime = "DeleteTest2.txt";
+    private const string UpdateTime = "UpdateTest1.txt";
+    private const string SaveOne = "SaveTest1.txt";
+    private const string SaveMultiple = "SaveTest2.txt";
+    private Stopwatch _stopwatchExpire = new Stopwatch();
     private async void Run()
     {
       while (true)
       {
-        await ExpirationFunctions.DeleteKeyAndExpiration();
+        _stopwatchExpire.Restart();
+        int count = await ExpirationFunctions.DeleteKeyAndExpiration();
+        _stopwatchExpire.Stop();
+        StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(DeleteTime), true);
+        await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, count, _stopwatchExpire.Elapsed.ToString()));
+        file.Close();
         await Task.Delay(CheckInterval);
       }
     }
@@ -93,7 +106,12 @@ namespace CacheLibary.Models
 
     public async Task Save<T, K>(IKey<K> key, T value, IOptions options)
     {
-      await ValueFunctions.TrySaveValue(key, value, options);
+      await Task.Run(() => {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValue(key, value, options).Wait();
+        }
+      });
     }
 
     public async Task<ICollection<T>> GetCollection<T, K>(IKey<K> key)
@@ -107,7 +125,13 @@ namespace CacheLibary.Models
 
     public async Task SaveCollection<T, K>(IKey<K> key, ICollection<T> values, IOptions options)
     {
-      await ValueFunctions.TrySaveValues(key, values, options);
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValues(key, values, options).Wait();
+        }
+      });
     }
 
     public async Task<ICollection<T>> GetCollection<T, D, K>(IKey<K> key) where D : ICustomOptionDAO<T>, T, new()
@@ -117,28 +141,87 @@ namespace CacheLibary.Models
 
     public async Task Save<T, D, K>(IKey<K> key, T value, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      await ValueFunctions.TrySaveValue<T, D, K>(key, value, options);
+      Stopwatch _stopwatchSaveOne = new Stopwatch();
+      _stopwatchSaveOne.Restart();
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValue<T, D, K>(key, value, options).Wait();
+        }
+      });
+      _stopwatchSaveOne.Stop();
+      StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(SaveOne), true);
+      await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, 1, _stopwatchSaveOne.Elapsed.ToString()));
+      file.Close();
     }
 
     public async Task SaveCollection<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      await ValueFunctions.TrySaveValues<T, D, K>(key, values, options);
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValues<T, D, K>(key, values, options).Wait();
+        }
+      });
+      
     }
 
-    public void UpdateExpiration<K>(IKey<K> key)
+    public async void UpdateExpiration<K>(IKey<K> key)
     {
-      ExpirationFunctions.UpdateExperation(key);
+      Stopwatch stopwatch = new Stopwatch();
+      stopwatch.Restart();
+      await ExpirationFunctions.UpdateExpiration(key);
+      stopwatch.Stop();
+      lock (UpdateTime)
+      {
+        StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(UpdateTime), true);
+        file.WriteLine(string.Format(WriteToFile, DateTime.UtcNow, 1, stopwatch.Elapsed.ToString()));
+        file.Close();
+      }
+    }
+
+    public async void UpdateExpirations<K>(IEnumerable<IKey<K>> keys)
+    {
+      Stopwatch stopwatch = new Stopwatch();
+      stopwatch.Restart();
+      await ExpirationFunctions.UpdateExpiration(keys);
+      stopwatch.Stop();
+      lock (UpdateTime)
+      {
+        StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(UpdateTime), true);
+        file.WriteLine(string.Format(WriteToFile, DateTime.UtcNow, keys.Count(), stopwatch.Elapsed.ToString()));
+        file.Close();
+      }
     }
 
     public async Task SaveCollection<T, D, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      await ValueFunctions.TrySaveValues<T, D, K>(keyValues, options);
+      Stopwatch _stopwatchSaveMultiple = new Stopwatch();
+      _stopwatchSaveMultiple.Start();
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValues<T, D, K>(keyValues, options).Wait();
+        }
+      });
+      _stopwatchSaveMultiple.Stop();
+      StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(SaveMultiple), true);
+      await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, keyValues.ToList().Count, _stopwatchSaveMultiple.Elapsed.ToString()));
+      file.Close();
     }
 
     public async Task SaveCollection<T, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options)
     {
-      await ValueFunctions.TrySaveValues(keyValues, options);
-      //throw new NotImplementedException();
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ValueFunctions.TrySaveValues(keyValues, options).Wait();
+        }
+      });
     }
 
     public async Task<IEnumerable<T>> GetCollection<T, K>(IEnumerable<IKey<K>> keys)

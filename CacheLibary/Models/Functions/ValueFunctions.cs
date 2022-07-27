@@ -3,6 +3,7 @@ using CacheLibary.Interfaces;
 using Newtonsoft.Json;
 using SQLite;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +17,7 @@ namespace CacheLibary.Models.Functions
     private const string _getValueByKeySelect = "select {0}.* from {0} where Id = (select ValueId from KeyValue join ( select Id from Key where Deleted = false and ObjectKeyBlob = ?) where KeyId = Id );";
     private const string _getValuesByKeySelect = "select {0}.* from {0} join (select ValueId from KeyValue join ( select Id from Key where Deleted = false and ObjectKeyBlob = ?) where KeyId = Id ) on Id = ValueId;";
     private const string _getValuesByValueIds = "select {0}.* from {0} where UniqueId in ( {1} );";
+    private const string _getValueByValueId = "select {0}.* from {0} where UniqueId = '{1}';";
     private static SQLiteAsyncConnection _db = PersistentCacheManager.Instance.GetDatabase();
 
     internal static async Task<T> GetValue<T, K>(IKey<K> key)
@@ -31,6 +33,7 @@ namespace CacheLibary.Models.Functions
       TableMapping mapping = await _db.GetMappingAsync<D>();
       string b = "'" + string.Join("', '", keys.Select(s => s.KeyBlob)) + "'";
       string st = string.Format(_getValuesByKeysSelect, mapping.TableName, b);
+      System.Diagnostics.Debug.Write(keys.ToList().Count + ": " + st);
       IEnumerable<D> ds = await _db.QueryAsync<D>(st);
       return ds.Cast<T>().ToList();
     }
@@ -43,9 +46,11 @@ namespace CacheLibary.Models.Functions
     }
     private static async Task SaveValue<T, K>(IKey<K> key, T value, IOptions options)
     {
-      await _db.RunInTransactionAsync(async t =>
+      await _db.RunInTransactionAsync(t =>
       {
-        Key k = await KeyFunctions.CreateAndGetKey(t, key, options);
+        Key k = KeyFunctions.CreateAndGetKey(t, key, options).Result;
+        if (k == null)
+          return;
         Value v = CreateAndGetValue(t, value);
         AddKeyToValue(t, k, v);
       });
@@ -58,7 +63,7 @@ namespace CacheLibary.Models.Functions
       }
       catch (Exception e)
       {
-        System.Diagnostics.Debug.Fail(e.Message);
+        System.Diagnostics.Debug.Write(e.Message);
       }
     }
 
@@ -97,21 +102,17 @@ namespace CacheLibary.Models.Functions
 
     private static async Task SaveValues<T, D, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options) where D : ICustomOptionDAO<T>, T, new()
     {
-      //TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
       await _db.RunInTransactionAsync(t =>
       {
-        IEnumerable<IKey<K>> keys = keyValues.Select(kv => kv.Key);
-        ICollection<T> values = keyValues.Select(kv => kv.Value).ToList();
+        IEnumerable<IKey<K>> keys = keyValues.AsParallel().Select(kv => kv.Key);
+        ICollection<T> values = keyValues.AsParallel().Select(kv => kv.Value).ToList();
         IEnumerable<Key> ks = KeyFunctions.CreateAndGetKeys(t, keys, options).Result;
-
         ICollection<D> daos = GetDaoValues<T, D>(values);
         List<D> savedValues = GetSavedValues<T, D>(daos).Result;
-        IEnumerable<string> savedValueUniqueIds = savedValues.Select(s => s.UniqueId);
+        IEnumerable<string> savedValueUniqueIds = savedValues.AsParallel().Select(s => s.UniqueId);
         SaveMissingDaos<T, D>(t, daos, savedValues, savedValueUniqueIds);
         SaveKeyValues(t, ks, savedValues, keyValues);
-        //tcs.SetResult(true);
       });
-      //bool b = await tcs.Task;
     }
 
     internal static async Task<IEnumerable<T>> GetValues<T, K>(IEnumerable<IKey<K>> keys)
@@ -120,10 +121,7 @@ namespace CacheLibary.Models.Functions
       string st = string.Format(_getValuesByKeysSelect, nameof(Value), b);
       IEnumerable<Value> ds = await _db.QueryAsync<Value>(st);
       ICollection<T> values = new List<T>();
-      foreach(Value value in ds)
-      {
-        values.Add(JsonConvert.DeserializeObject<T>(value.ObjectBlob));
-      }
+      _ = Parallel.ForEach(ds, d => values.Add(JsonConvert.DeserializeObject<T>(d.ObjectBlob)));
       return values;
     }
 
@@ -146,7 +144,6 @@ namespace CacheLibary.Models.Functions
         IEnumerable<IKey<K>> keys = keyValues.Select(kv => kv.Key);
         ICollection<T> values = keyValues.Select(kv => kv.Value).ToList();
         IEnumerable<Key> ks = KeyFunctions.CreateAndGetKeys(t, keys, options).Result;
-
         ICollection<Value> daos = GetValues(values);
         _ = t.InsertAll(daos);
         SaveKeyValues(t, ks, daos, keyValues);
@@ -156,25 +153,25 @@ namespace CacheLibary.Models.Functions
     private static ICollection<Value> GetValues<T>(ICollection<T> values)
     {
       ICollection<Value> daos = new List<Value>();
-      foreach(T value in values)
-      {
-        daos.Add(new Value { ObjectBlob = JsonConvert.SerializeObject(value) });
-      }
+      _ = Parallel.ForEach(values, v => daos.Add(new Value { ObjectBlob = JsonConvert.SerializeObject(v) }));
       return daos;
     }
 
     private static void SaveKeyValues<T, D, K>(SQLiteConnection transaction, IEnumerable<Key> ks, IEnumerable<D> savedValues, IEnumerable<KeyValuePair<IKey<K>, T>> keyValues) where D : ICustomOptionDAO<T>, T, new()
     {
-      ICollection<KeyValue> kvs = new List<KeyValue>();
+      ConcurrentBag<KeyValue> kvs = new ConcurrentBag<KeyValue>();
       ILookup<string, Key> keys = ks.ToLookup(k => k.ObjectKeyBlob);
       ILookup<string, D> values = savedValues.ToLookup(v => v.UniqueId);
       D d = new D();
-      foreach (KeyValuePair<IKey<K>, T> kvp in keyValues)
+      _ = Parallel.ForEach(keyValues, kvp => 
       {
+        if (!keys.Contains(kvp.Key.KeyBlob))
+          return;
         int keyId = keys[kvp.Key.KeyBlob].First().Id;
         int valueId = values[d.CreateInstance<D>(kvp.Value).UniqueId].First().Id;
         kvs.Add(new KeyValue { KeyId = keyId, ValueId = valueId });
-      }
+      });
+
       _ = transaction.InsertAll(kvs);
     }
     private static void SaveKeyValues<T, K>(SQLiteConnection transaction, IEnumerable<Key> ks, IEnumerable<Value> savedValues, IEnumerable<KeyValuePair<IKey<K>, T>> keyValues)
@@ -182,12 +179,12 @@ namespace CacheLibary.Models.Functions
       ICollection<KeyValue> kvs = new List<KeyValue>();
       ILookup<string, Key> keys = ks.ToLookup(k => k.ObjectKeyBlob);
       ILookup<string, Value> values = savedValues.ToLookup(v => v.ObjectBlob);
-      foreach (KeyValuePair<IKey<K>, T> kvp in keyValues)
+      _ = Parallel.ForEach(keyValues, kvp =>
       {
         int keyId = keys[kvp.Key.KeyBlob].First().Id;
         int valueId = values[JsonConvert.SerializeObject(kvp.Value)].First().Id;
         kvs.Add(new KeyValue { KeyId = keyId, ValueId = valueId });
-      }
+      });
       _ = transaction.InsertAll(kvs);
     }
 
@@ -196,6 +193,8 @@ namespace CacheLibary.Models.Functions
       await _db.RunInTransactionAsync(t =>
       {
         Key k = KeyFunctions.CreateAndGetKey(t, key, options).Result;
+        if (k == null)
+          return;
         Value v = CreateAndGetValue(t, values);
         AddKeyToValue(t, k, v);
       });
@@ -218,6 +217,8 @@ namespace CacheLibary.Models.Functions
       await _db.RunInTransactionAsync(t =>
       {
         Key k = KeyFunctions.CreateAndGetKey(t, key, options).Result;
+        if (k == null)
+          return;
         _ = SaveValue<T, D, K>(t, k, value);
       });
     }
@@ -246,7 +247,9 @@ namespace CacheLibary.Models.Functions
     {
       try
       {
-        return await _db.GetAsync<D>(d.Id);
+        TableMapping mapping = await _db.GetMappingAsync<D>();
+        string query = string.Format(_getValueByValueId, mapping.TableName, d.UniqueId);
+        return await _db.FindWithQueryAsync<D>(query);
       }
       catch(Exception e)
       {
@@ -265,6 +268,8 @@ namespace CacheLibary.Models.Functions
       await _db.RunInTransactionAsync(t =>
       {
         Key k = KeyFunctions.CreateAndGetKey(t, key, options).Result;
+        if (k == null)
+          return;
         _ = SaveValues<T, D, K>(t, k, values);
       });
     }
@@ -280,9 +285,10 @@ namespace CacheLibary.Models.Functions
 
     private static void SaveMissingDaos<T, D>(SQLiteConnection t, ICollection<D> daos, List<D> savedValues, IEnumerable<string> savedValueUniqueIds) where D : ICustomOptionDAO<T>, T, new()
     {
-      ICollection<D> missingDaos = daos.Where(da => !savedValueUniqueIds.Contains(da.UniqueId)).ToList();
+      ICollection<D> missingDaos = daos.AsParallel().Where(da => !savedValueUniqueIds.Contains(da.UniqueId)).ToList();
       _ = t.InsertAll(missingDaos);
-      savedValues.AddRange(missingDaos);
+      if(missingDaos.Count > 0)
+        savedValues.AddRange(missingDaos);
     }
 
     private static async Task<List<D>> GetSavedValues<T, D>(ICollection<D> daos) where D : ICustomOptionDAO<T>, T, new()
@@ -296,10 +302,7 @@ namespace CacheLibary.Models.Functions
     private static void SaveKeyValues<T, D>(SQLiteConnection t, Key k, IEnumerable<D> savedValues) where D : ICustomOptionDAO<T>, T, new()
     {
       ICollection<KeyValue> keyValues = new List<KeyValue>();
-      foreach (D value in savedValues)
-      {
-        keyValues.Add(new KeyValue { ValueId = value.Id, KeyId = k.Id });
-      }
+      _ = Parallel.ForEach(savedValues, s => keyValues.Add(new KeyValue { ValueId = s.Id, KeyId = k.Id }));
       int i = t.InsertAll(keyValues);
     }
 
@@ -313,14 +316,10 @@ namespace CacheLibary.Models.Functions
 
     private static ICollection<D> GetDaoValues<T, D>(ICollection<T> values) where D : ICustomOptionDAO<T>, T, new()
     {
-      ICollection<D> daos = new List<D>();
+      ConcurrentBag<D> daos = new ConcurrentBag<D>();
       D d = new D();
-      foreach (T value in values)
-      {
-        daos.Add(d.CreateInstance<D>(value));
-      }
-
-      return daos;
+      _ = Parallel.ForEach(values, v => daos.Add(d.CreateInstance<D>(v)));
+      return daos.ToList();
     }
 
     internal static async Task TrySaveValues<T, D, K>(IKey<K> key, ICollection<T> values, IOptions options) where D : ICustomOptionDAO<T>, T, new()
@@ -356,11 +355,12 @@ namespace CacheLibary.Models.Functions
     {
       AddKeyValue(transaction, k.Id, v.Id);
     }
-
+    private const string KeyValueNotExist = "select not exists(select 1 from KeyValue where KeyId = {0} and ValueId = {1})";
     private static void AddKeyValue(SQLiteConnection transaction, int keyId, int valueId)
     {
       KeyValue keyValue = new KeyValue() { KeyId = keyId, ValueId = valueId };
-      _ = transaction.Insert(keyValue);
+      if(transaction.ExecuteScalar<bool>(KeyValueNotExist, keyId, valueId))
+        _ = transaction.Insert(keyValue);
     }
   }
 }

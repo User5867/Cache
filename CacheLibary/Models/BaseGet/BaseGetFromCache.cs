@@ -18,11 +18,12 @@ namespace CacheLibary.Models
       Options = options;
     }
 
-    protected virtual async Task<T> Get(IKey<K> key, bool offline = false)
+    protected virtual async Task<T> Get(IKey<K> key)
     {
       T value = GetFromMemory(key);
       value = await GetFromPersistentAndSave(key, value);
       UpdateExpiration(key, value);
+      bool offline = false;
       if(!offline)
         value = await GetFromServiceAndSave(key, value);
       return value;
@@ -40,9 +41,9 @@ namespace CacheLibary.Models
     {
       return MemoryManager.Get<T, K>(key);
     }
-    protected virtual void SaveToPersistent(IKey<K> key, T value)
+    protected virtual async void SaveToPersistent(IKey<K> key, T value)
     {
-      PersistentManager.Save(key, value, Options);
+      await PersistentManager.Save(key, value, Options);
     }
     protected virtual void SaveToMemory(IKey<K> key, T value)
     {
@@ -81,7 +82,7 @@ namespace CacheLibary.Models
       return value;
     }
 
-    private void SaveToCache(IKey<K> key, T value)
+    protected void SaveToCache(IKey<K> key, T value)
     {
       if (!ValueIsSet(value))
         return;

@@ -14,13 +14,6 @@ namespace CacheLibary.Models.Functions
   {
     private static SQLiteAsyncConnection _db = PersistentCacheManager.Instance.GetDatabase();
 
-    public static async void UpdateExperation(Key key)
-    {
-      //Expiration expiration = key.Expiration;
-      //expiration.LastAccess = DateTime.UtcNow;
-      //await _db.UpdateAsync(expiration);
-    }
-
     internal static Expiration GetExpiration(IOptions options)
     {
       Expiration expiration;
@@ -40,39 +33,53 @@ namespace CacheLibary.Models.Functions
         expiration = null;
       return expiration;
     }
-
-    private static async Task<Expiration> TryGetExpiration(int id)
+    private const string UpdateExpirationQuery = "update Expiration set LastAccess = {0} where Id = (select ExpirationId from Key where ObjectKeyBlob = '{1}')";
+    private const string UpdateExpirationsQuery = "update Expiration set LastAccess = {0} where Id in (select ExpirationId from Key where ObjectKeyBlob in ( {1} ))";
+    internal static async Task UpdateExpiration<K>(IKey<K> key)
     {
-      try
-      {
-        return await _db.GetAsync<Expiration>(id);
-      }
-      catch
-      {
-        return null;
-      }
+      await UpdateExpiration(key.KeyBlob);
+    }
+    internal static async Task UpdateExpiration(Key key, SQLiteConnection transaction)
+    {
+      await UpdateExpiration(key.ObjectKeyBlob, transaction);
+    }
+    private static async Task UpdateExpiration(string keyBlob, SQLiteConnection transaction = null)
+    {
+      string updateQuery = string.Format(UpdateExpirationQuery, DateTime.UtcNow.Ticks, keyBlob);
+      if (transaction == null)
+        _ = await _db.ExecuteAsync(updateQuery);
+      else
+        _ = transaction.Execute(updateQuery);
     }
 
-    internal static async void UpdateExperation<K>(IKey<K> key)
+    private static async Task UpdateExpirations(string keyBlobs, SQLiteConnection transaction = null)
     {
-      //Key k = await KeyFunctions.GetKey(key);
-      //if (k == null)
-      //  return;
-      //Expiration expiration = await TryGetExpiration(k.ExpirationId);
-      //if (expiration == null)
-      //  return;
-      //expiration.LastAccess = DateTime.UtcNow;
-      //_ = await _db.UpdateAsync(expiration);
+      string updateQuery = string.Format(UpdateExpirationsQuery, DateTime.UtcNow.Ticks, keyBlobs);
+      if (transaction == null)
+        _ = await _db.ExecuteAsync(updateQuery);
+      else
+        _ = transaction.Execute(updateQuery);
+    }
+
+    internal static async Task UpdateExpiration<K>(IEnumerable<IKey<K>> keys)
+    {
+      string keyBlobs = "'" + string.Join("', '", keys.Select(k => k.KeyBlob)) + "'";
+      await UpdateExpirations(keyBlobs);
+    }
+    internal static async Task UpdateExpirations(IEnumerable<Key> keys, SQLiteConnection transaction)
+    {
+      string keyBlobs = "'" + string.Join("', '", keys.Select(k => k.ObjectKeyBlob)) + "'";
+      await UpdateExpirations(keyBlobs, transaction);
     }
     private const string GetExpired = "select Id from Expiration where TotalExpiration != 0 and TotalExpiration < {0} UNION select Id from Expiration where SlidingExpiration != 0 and SlidingExpiration + LastAccess < {0}";
     private const string SetKeysDeleted = "update Key set Deleted = true where ExpirationId in ( {0} )";
     private const string DeleteExpirations = "delete from Expiration where Id in ( {0} )";
-    internal static async Task DeleteKeyAndExpiration()
+    internal static async Task<int> DeleteKeyAndExpiration()
     {
       string query = string.Format(GetExpired, DateTime.UtcNow.Ticks);
       IEnumerable<int> expiredIds = await _db.QueryScalarsAsync<int>(query);
       if (!expiredIds.Any())
-        return;
+        return 0;
       string expiredString = string.Join(", ", expiredIds);
       string updateQuery = string.Format(SetKeysDeleted, expiredString);
       string deleteQuery = string.Format(DeleteExpirations, expiredString);
@@ -81,51 +88,8 @@ namespace CacheLibary.Models.Functions
         _ = t.Execute(updateQuery);
         _ = t.Execute(deleteQuery);
       });
+      return expiredIds.ToList().Count;
     }
-    //private static async Task TryDeleteKeyAndExpirationWithIds(IEnumerable<object> ids)
-    //{
-    //  try
-    //  {
-    //    await DeleteKeyAndExpirationWithIds(ids);
-    //  }
-    //  catch (Exception e)
-    //  {
-    //    System.Diagnostics.Debug.Fail(e.Message);
-    //  }
-    //}
-    //private static async Task DeleteKeyAndExpirationWithIds(IEnumerable<object> ids)
-    //{
-    //  await _db.RunInTransactionAsync(t =>
-    //  {
-    //    t.DeleteAllIds<Expiration>(ids);
-    //    IEnumerable<Key> keys = t.GetAllWithChildren<Key>(k => ids.Contains(k.ExpirationId));
-    //    SetAllKeysExpired(keys);
-    //    _ = t.UpdateAll(keys);
-    //  });
-    //}
-
-    //private static void SetAllKeysExpired(IEnumerable<Key> keys)
-    //{
-    //  foreach (Key key in keys)
-    //  {
-    //    SetKeyExpired(key);
-    //  }
-    //}
-
-    //private static void SetKeyExpired(Key key)
-    //{
-    //  key.Deleted = true;
-    //  key.ExpirationId = -1;
-    //}
-
-    //private static async Task<List<Expiration>> GetExpired()
-    //{
-    //  List<Expiration> totalExpired = await GetTotalExpired();
-    //  IEnumerable<int> ids = totalExpired.Select(t => t.Id);
-    //  List<Expiration> slidingExpired = await GetSlidingExpired(ids);
-    //  List<Expiration> expired = CombineExpired(totalExpired, slidingExpired);
-    //  return expired;
-    //}
 
     private const string GetDeletedKeyIds = "select Id from Key where Deleted = true and ObjectKeyBlob Like '%{0}%'";
     private const string GetToDeleteValueIds = "select d.Id from Key as k Join (select * from KeyValue join (select Id from {0}) on Id = ValueId) as d on k.Id = KeyId where k.Id in ( {1} )";
@@ -152,168 +116,12 @@ namespace CacheLibary.Models.Functions
         int i = t.Execute(deleteKeys);
         i = t.Execute(deleteKeyValues);
         i = t.Execute(deleteValues);
-        //t.Execute();
       });
-      //ICollection<Key> keys = await GetExpiredKeys(objectType);
-      //IEnumerable<int> keyIds = GetKeyIds(keys);
-      //IEnumerable<int> valueIds = await ValueFunctions.GetValueIds(keyIds);
-      //SetAllKeyBlobsExpired(keys);
-      //await TryDeleteExpiredValues<D>(objectType, keys, keyIds, valueIds);
     }
 
     internal static async Task DeleteExpired(Type objectType)
     {
-      //ICollection<Key> keys = await GetExpiredKeys(objectType);
-      //IEnumerable<int> keyIds = GetKeyIds(keys);
-      //IEnumerable<int> valueIds = await ValueFunctions.GetValueIds(keyIds);
-      //SetAllKeyBlobsExpired(keys);
-      //await TryDeleteExpiredValues(keys, keyIds, valueIds);
-    }
-    //private static async Task TryDeleteExpiredValues(ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds)
-    //{
-    //  try
-    //  {
-    //    await DeleteExpiredValues(keys, keyIds, valueIds);
-    //  }
-    //  catch (Exception e)
-    //  {
-    //    System.Diagnostics.Debug.Fail(e.Message);
-    //  }
-    //}
-    //private static async Task TryDeleteExpiredValues<D>(Type objectType, ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds) where D : ICustomOptionDAO, new()
-    //{
-    //  try
-    //  {
-    //    await DeleteExpiredValues<D>(objectType, keys, keyIds, valueIds);
-    //  }
-    //  catch (Exception e)
-    //  {
-    //    System.Diagnostics.Debug.Fail(e.Message);
-    //  }
-    //}
-    private static async Task DeleteExpiredValues(ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds)
-    {
-      await _db.RunInTransactionAsync(t =>
-      {
-        _ = t.UpdateAll(keys);
-        DeleteAllKeyValuesByKeyIds(t, keyIds);
-        //t.DeleteAllIds<Value>(GetObjectIEnumerable(valueIds));
-      });
-    }
-    //private static async Task DeleteExpiredValues<D>(Type objectType, ICollection<Key> keys, IEnumerable<int> keyIds, IEnumerable<int> valueIds) where D : ICustomOptionDAO, new()
-    //{
-    //  await _db.RunInTransactionAsync(async t =>
-    //  {
-    //    _ = t.UpdateAll(keys);
-    //    DeleteAllKeyValuesByKeyIds(t, keyIds);
-    //    IEnumerable<object> ids = await GetExpiredValueIdsAsObjects(objectType, valueIds);
-    //    IEnumerable<D> values = await GetExpiredValues<D>(ids);
-    //    t.UpdateAll(values);
-    //  });
-    //}
-
-    //private static async Task<IEnumerable<D>> GetExpiredValues<D>(IEnumerable<object> ids) where D : ICustomOptionDAO, new()
-    //{
-    //  ICollection<D> values = new List<D>();
-    //  foreach(object id in ids)
-    //  {
-    //    D value = await _db.GetAsync<D>(id);
-    //    D expiredValue = new D
-    //    {
-    //      Deleted = true,
-    //      Id = value.Id,
-    //      Hashcode = value.Hashcode
-    //    };
-    //    values.Add(expiredValue);
-    //  }
-    //  return values;
-    //}
-
-    //private static async Task<IEnumerable<object>> GetExpiredValueIdsAsObjects(Type objectType, IEnumerable<int> valueIds)
-    //{
-    //  IEnumerable<int> expiredvalueIds = await GetExpiredValueIds(objectType, valueIds);
-    //  return GetObjectIEnumerable(expiredvalueIds);
-    //}
-
-    private static IEnumerable<object> GetObjectIEnumerable(IEnumerable<int> expiredvalueIds)
-    {
-      return expiredvalueIds.Select(v => (object)v);
-    }
-
-    //private static async Task<IEnumerable<int>> GetExpiredValueIds(Type objectType, IEnumerable<int> valueIds)
-    //{
-    //  IEnumerable<int> notExpiredValueIds = await GetNotExpiredValueIds(objectType, valueIds);
-    //  return valueIds.ToList().Where(v => !notExpiredValueIds.Contains(v));
-    //}
-
-    //private static async Task<IEnumerable<int>> GetNotExpiredValueIds(Type objectType, IEnumerable<int> valueIds)
-    //{
-    //  IEnumerable<int> keyId = await GetExistingKeyIdsForValues(objectType, valueIds);
-    //  return await ValueFunctions.GetValueIds(keyId);
-    //}
-
-    //private static async Task<IEnumerable<int>> GetExistingKeyIdsForValues(Type objectType, IEnumerable<int> valueIds)
-    //{
-    //  IEnumerable<int> keyIds = await GetRemainingKeyIdsForValues(valueIds);
-    //  ICollection<Key> keys = await GetKeysByIds(keyIds);
-    //  await RemoveKeysForOtherTypes(objectType, keys);
-    //  return keys.Select(k => k.Id);
-    //}
-
-    //private static async Task<ICollection<Key>> GetKeysByIds(IEnumerable<string> keyIds)
-    //{
-    //  return await _db.Table<Key>().Where(k => keyIds.Contains(k.ObjectKeyBlob)).ToListAsync();
-    //}
-
-    //private static async Task<IEnumerable<int>> GetRemainingKeyIdsForValues(IEnumerable<int> valueIds)
-    //{
-    //  return (await _db.Table<KeyValue>().Where(kv => valueIds.Contains(kv.ValueId)).ToListAsync()).Select(kv => kv.KeyId);
-    //}
-
-    private static void DeleteAllKeyValuesByKeyIds(SQLiteConnection t, IEnumerable<int> keyIds)
-    {
-      foreach (int id in keyIds)
-      {
-        DeleteKeyValueByKeyId(t, id);
-      }
-    }
-
-    private static void DeleteKeyValueByKeyId(SQLiteConnection t, int id)
-    {
-      _ = t.Query<KeyValue>("DELETE FROM [KeyValue] WHERE [KeyId] = " + id);
-    }
-
-    private static void SetAllKeyBlobsExpired(ICollection<Key> keys)
-    {
-      foreach (Key k in keys)
-      {
-        SetKeyBlobExpired(k);
-      }
-    }
-
-    private static void SetKeyBlobExpired(Key k)
-    {
-      k.ObjectKeyBlob = null;
-    }
-
-    //private static async Task<ICollection<Key>> GetExpiredKeys(Type objectType)
-    //{
-    //  ICollection<Key> keys = await _db.Table<Key>().Where(k => k.Deleted && k.ObjectKeyBlob != null).ToListAsync();
-    //  await RemoveKeysForOtherTypes(objectType, keys);
-    //  return keys;
-    //}
-
-    private static async Task RemoveKeysForOtherTypes(Type objectType, ICollection<Key> keys)
-    {
-      //foreach (Key key in keys)
-      //{
-      //  await _db.GetAsync(key);
-      //}
-      //foreach (Key key in keys.ToList())
-      //{
-      //  if (key.ObjectKey.ObjectType.FullName != objectType.FullName)
-      //    _ = keys.Remove(key);
-      //}
+      throw new NotImplementedException();
     }
   }
 }

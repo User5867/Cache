@@ -17,7 +17,9 @@ namespace CacheLibary.Models.BaseGet.WithList
     }
     protected override async Task SaveToPersistent(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues)
     {
+      System.Diagnostics.Debug.Write(2);
       await PersistentManager.SaveCollection<T, D, K>(keyValues, Options);
+      System.Diagnostics.Debug.Write(2);
     }
   }
 }

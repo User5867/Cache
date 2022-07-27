@@ -18,13 +18,13 @@ namespace CacheLibary.Models
 
   internal class MemoryCacheManager : IMemoryCacheManager
   {
-    private MemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 20000, TrackStatistics = true, ExpirationScanFrequency = TimeSpan.FromMinutes(1) });
+    private MemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions { SizeLimit = 100000, ExpirationScanFrequency = TimeSpan.FromSeconds(20), CompactionPercentage = 0.1 });
     public static IMemoryCacheManager Instance = new MemoryCacheManager();
 
     private MemoryCacheManager()
     {
-      ReadFromFile();
-      Run();
+      //ReadFromFile();
+      //Run();
     }
 
     public T Get<T, K>(IKey<K> key)
@@ -38,7 +38,7 @@ namespace CacheLibary.Models
       if (value is ICollection c)
         size = c.Count;
       MemoryCacheEntryOptions entryOptions = GetMemoryCacheEntryOptions(options, size);
-      _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
+      _ = _memoryCache.Set(Key<K>.GetObjectKey(key), value, entryOptions);
     }
 
     private static MemoryCacheEntryOptions GetMemoryCacheEntryOptions(IOptions options, long size)
@@ -66,6 +66,73 @@ namespace CacheLibary.Models
       }
     }
     private string _fileName = DependencyService.Get<IFileHelper>().GetLocalFilePath("cache.txt");
+    //public static string ToJson(ICollection<KeyValuePair<Key<object>, CustomCacheEntry>> c)
+    //{
+    //  StringWriter sw = new StringWriter();
+    //  JsonTextWriter writer = new JsonTextWriter(sw);
+
+    //  {
+    //    writer.WriteStartObject();
+
+    //    foreach (KeyValuePair<Key<object>, CustomCacheEntry> kv in c)
+    //    {
+    //      writer.WriteP
+    //    }
+
+    //    "name" : "Jerry"
+    //  writer.WritePropertyName("name");
+    //    writer.WriteValue(p.Name);
+
+    //    "likes": ["Comedy", "Superman"]
+    //  writer.WritePropertyName("likes");
+    //    writer.WriteStartArray();
+    //    foreach (string like in p.Likes)
+    //    {
+    //      writer.WriteValue(like);
+    //    }
+    //    writer.WriteEndArray();
+
+    //  }
+    //  writer.WriteEndObject();
+
+    //  return sw.ToString();
+    //}
+    //private static ICollection<KeyValuePair<Key<object>, CustomCacheEntry>> FromJson(string s)
+    //{
+    //  StringReader sr = new StringReader(s);
+    //  JsonTextReader reader = new JsonTextReader(sr);
+
+    //  ICollection<KeyValuePair<Key<object>, CustomCacheEntry>> returnValue = new List<KeyValuePair<Key<object>, CustomCacheEntry>>();
+    //  while (reader.Read())
+    //  {
+    //    KeyValuePair<Key<object>, CustomCacheEntry > kv;
+    //    if(reader.TokenType == JsonToken.StartArray)
+    //    {
+    //      reader.Read();
+    //      if(reader.TokenType == JsonToken.StartObject)
+    //      {
+    //        reader.Read();
+    //        if(reader.TokenType == JsonToken.PropertyName && (string)reader.Value == "Key")
+    //        {
+    //          reader.Read();
+    //          if(reader.TokenType == JsonToken.StartObject)
+    //          {
+    //            reader.Read();
+    //            string ki =
+    //            if(reader.TokenType == JsonToken.PropertyName && (string)reader.Value == "KeyIdentifier")
+    //            {
+
+    //            }
+    //          }
+    //        }
+
+    //      }
+    //    }
+
+
+    //  }
+    //  return returnValue;
+    //}
     private void ReadFromFile()
     {
       if (!File.Exists(_fileName))
@@ -74,6 +141,7 @@ namespace CacheLibary.Models
 
       if (string.IsNullOrEmpty(json))
         return;
+
       ICollection<KeyValuePair<Key<object>, CustomCacheEntry>> keyValuePairs = JsonConvert.DeserializeObject<ICollection<KeyValuePair<Key<object>, CustomCacheEntry>>>(json);
       MethodInfo methodInfo = typeof(CacheExtensions).GetMethods().Where(m => m.Name == "Set").Where(m => m.IsGenericMethod).Where(m => m.IsStatic).FirstOrDefault(m => m.GetParameters().LastOrDefault().ParameterType == typeof(MemoryCacheEntryOptions));
       foreach (var entry in keyValuePairs)
@@ -99,7 +167,7 @@ namespace CacheLibary.Models
         {
           v = JsonConvert.DeserializeObject(entry.Value.Value.ToString(), tc);
           mi = methodInfo.MakeGenericMethod(tc);
-        }         
+        }
         _ = mi.Invoke(_memoryCache, new object[] { _memoryCache, entry.Key, v, m });
       }
     }

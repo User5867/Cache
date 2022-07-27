@@ -3,7 +3,7 @@
   <Class Name="CacheLibary.CacheManager" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="18.25" Y="0.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAACAAAAAAAAAAAAAAAAAAACAAAAAAQAAAAAAAAQA=</HashCode>
+      <HashCode>AAAAACAACAAAAAAAAAAAAAAAACAAACAAZAIAAAAAAQA=</HashCode>
       <FileName>CacheManager.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
@@ -11,7 +11,7 @@
   <Class Name="CacheLibary.DAOs.OptionDAOs.MaterialDAO" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="18.25" Y="2.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAACBAAAAAAAAAAAgAAAEAAIAAAAAYAQAAAAAIAAAQA=</HashCode>
+      <HashCode>AAACBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAQQA=</HashCode>
       <FileName>DAOs\OptionDAOs\MaterialDAO.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
@@ -19,17 +19,16 @@
   <Class Name="CacheLibary.DAOs.Expiration" Collapsed="true">
     <Position X="21.75" Y="0.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>ACACAAAAAACAAAQAIAAAAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
+      <HashCode>ACACAAAAAACAAAAAIAAAAAAAAAAAAAAAAAAAAAAIAAA=</HashCode>
       <FileName>DAOs\Expiration.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="CacheLibary.DAOs.Key" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="20" Y="1.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AIACAAAAAAAAAAAAAAIAEAAIAAAAAAAAIAAgAAAAAEA=</HashCode>
+      <HashCode>QAACAAAAAAAAAAAAAAIAEAAAAAAAAAAAIAAAAAAAAEA=</HashCode>
       <FileName>DAOs\Key.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="CacheLibary.DAOs.KeyValue" Collapsed="true">
     <Position X="16.5" Y="2.5" Width="1.5" />
@@ -41,14 +40,14 @@
   <Class Name="CacheLibary.DAOs.Value" Collapsed="true">
     <Position X="18.25" Y="3.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAACAAAAgAAAAAAgCAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAACAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>DAOs\Value.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="CacheLibary.Models.BaseGet.BaseGetCollectionWithListFromCache&lt;T, K&gt;" Collapsed="true">
     <Position X="14" Y="7.25" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AGAAIAAAAAAQAAJAAAAIAEAAAAEAAAAAAAAACAAhEAA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAAJIAAAIAAAAAAAAAAAAAAAACAAgEAA=</HashCode>
       <FileName>Models\BaseGet\WithList\BaseGetCollectionWithListFromCache.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -63,10 +62,9 @@
   <Class Name="CacheLibary.Models.BaseGet.BaseGetCollectionFromCacheExternal" Collapsed="true">
     <Position X="7.25" Y="5.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAACAAAAAA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Models\BaseGet\BaseGetCollectionFromCacheExternal.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.2" />
   </Class>
   <Class Name="CacheLibary.Models.BaseGet.BaseGetCollectionFromCacheExternal&lt;T, D, K&gt;" Collapsed="true">
     <Position X="9.5" Y="5.75" Width="1.5" />
@@ -79,7 +77,7 @@
   <Class Name="CacheLibary.Models.BaseGet.WithList.BaseGetCollectionWithListFromCacheExternal&lt;T, D, K&gt;" Collapsed="true">
     <Position X="14" Y="8.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAACAAAAAA=</HashCode>
       <FileName>Models\BaseGet\WithList\BaseGetCollectionWithListFromCacheExternal.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -87,7 +85,7 @@
   <Class Name="CacheLibary.Models.BaseGetFromCache&lt;T, K&gt;" Collapsed="true">
     <Position X="10.5" Y="4.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AEAAAAFAAAIAAAZYAAAIAAgCAAEAAAAIAAAgCABgEAA=</HashCode>
+      <HashCode>AAAAAAFAAAIAAAJYAAAIAAgCAAEAAAAIAAAACABgEAA=</HashCode>
       <FileName>Models\BaseGet\BaseGetFromCache.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -103,7 +101,7 @@
   <Class Name="CacheLibary.Models.Cache&lt;T, D&gt;" Collapsed="true">
     <Position X="5" Y="10.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAACAAAAAAIIAAAAAAAAAAAAAAAAAIABAIAA=</HashCode>
+      <HashCode>AAAAAAAAAACAAAAAAAIAhAAAAAAAAAAEAAAAIAAAAAA=</HashCode>
       <FileName>Models\Cache.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -126,7 +124,7 @@
   <Class Name="CacheLibary.Models.Key&lt;K&gt;" Collapsed="true">
     <Position X="5" Y="7.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAACAAAAgACABAAAAAAAAJAAAIAAAAAAAAA=</HashCode>
+      <HashCode>AABAAAAAAAACAAAAgACAhAAAAAAAAJAAAIAAAAAAAAA=</HashCode>
       <FileName>Models\Key.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" />
@@ -134,23 +132,22 @@
   <Class Name="CacheLibary.Models.MemoryCacheManager" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="21.75" Y="2.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAIAggAAAAQRAAIAAAAAAAgAAAAAAQAABAAAAAAI=</HashCode>
-      <FileName>Models\MemoryCacheManager.cs</FileName>
+      <HashCode>AAAAAIAggAABAQRAAIAAAAAAAgAAAAAAQAAAAAAAAAI=</HashCode>
+      <FileName>Models\CacheManager\MemoryCacheManager.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="CacheLibary.Models.PersistentCacheManager" Collapsed="true" BaseTypeListCollapsed="true">
     <Position X="16.5" Y="3.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>CAAAhIAAAACAAAJAAFIAAAAAAAEAAAAAQAAAAEAAAAI=</HashCode>
-      <FileName>Models\PersistentCacheManager.cs</FileName>
+      <HashCode>CAAAhJAAAACAAQpAAEIAlAAAAAEAAAAEQAAAAEAAAAI=</HashCode>
+      <FileName>Models\CacheManager\PersistentCacheManager.cs</FileName>
     </TypeIdentifier>
     <Lollipop Position="0.2" Collapsed="true" />
   </Class>
   <Class Name="CacheLibary.Models.Functions.ExpirationFunctions" Collapsed="true">
     <Position X="16.5" Y="1.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>ABAAgAQAAFDBCCIAAAgAAQAgAQkQEACABSIEgAAIABA=</HashCode>
+      <HashCode>AAAAgBIAABBACAIAgAAAAgAAEAAQgQAADAAAAAAAAgA=</HashCode>
       <FileName>Models\Functions\ExpirationFunctions.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -164,14 +161,14 @@
   <Class Name="CacheLibary.Models.Functions.KeyFunctions" Collapsed="true">
     <Position X="21.75" Y="1.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAgAAQIAAAAAAAAAAAAgQAAAAAAgAAAAAAAAAAAAA=</HashCode>
+      <HashCode>gCgAgAAAIAAAAAAAAAAABAAAAAAAAABAAAAAAAEICAA=</HashCode>
       <FileName>Models\Functions\KeyFunctions.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="CacheLibary.Models.Functions.ValueFunctions" Collapsed="true">
     <Position X="20" Y="3.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAgQAAIAEAAAAAAAwAAIAEAEAAAAAAEAAAYAAQAAA=</HashCode>
+      <HashCode>CAIQgAIAIEAFQAAAQAAAAAAAAEAAgAIAAAAAQAAQECA=</HashCode>
       <FileName>Models\Functions\ValueFunctions.cs</FileName>
     </TypeIdentifier>
   </Class>
@@ -278,7 +275,7 @@
   <Interface Name="CacheLibary.Interfaces.IBaseGetFromCache&lt;T, K&gt;" Collapsed="true">
     <Position X="4.5" Y="0.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>Interfaces\BaseGet\IBaseGetFromCache.cs</FileName>
     </TypeIdentifier>
   </Interface>
@@ -313,7 +310,7 @@
   <Interface Name="CacheLibary.Interfaces.ICustomOptionDAO" Collapsed="true">
     <Position X="2" Y="8.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA=</HashCode>
       <FileName>Interfaces\ICustomOptionDAO.cs</FileName>
     </TypeIdentifier>
   </Interface>
@@ -341,7 +338,7 @@
   <Interface Name="CacheLibary.Interfaces.IKey&lt;K&gt;" Collapsed="true">
     <Position X="21.75" Y="4.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAACAAAAAAAABAAAAAAAAAAAAIAAAAAAAAA=</HashCode>
+      <HashCode>AABAAAAAAAACAAAAAAAABAAAAAAAAAAAAIAAAAAAAAA=</HashCode>
       <FileName>Interfaces\IKey.cs</FileName>
     </TypeIdentifier>
   </Interface>
@@ -369,7 +366,7 @@
   <Interface Name="CacheLibary.Interfaces.CacheManager.IPersistentCacheManager" Collapsed="true">
     <Position X="21.75" Y="5.5" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAABIAAAACAAAJAAEAAAAAAAAEAAAAAAAAAAEAAAAA=</HashCode>
+      <HashCode>AAAABJAAAACAAAJAAEAAAAAAAAEAAAAAAAAAAEAAAAA=</HashCode>
       <FileName>Interfaces\CacheManager\IPersistentCacheManager.cs</FileName>
     </TypeIdentifier>
   </Interface>

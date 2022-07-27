@@ -4,6 +4,7 @@ using Android.App;
 using Android.Content.PM;
 using Android.Runtime;
 using Android.OS;
+using System.IO;
 
 namespace Cache.Droid
 {
@@ -12,11 +13,19 @@ namespace Cache.Droid
     {
         protected override void OnCreate(Bundle savedInstanceState)
         {
-            base.OnCreate(savedInstanceState);
+      try
+      {
+        base.OnCreate(savedInstanceState);
 
-            Xamarin.Essentials.Platform.Init(this, savedInstanceState);
-            global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
-            LoadApplication(new App());
+        Xamarin.Essentials.Platform.Init(this, savedInstanceState);
+        global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
+        LoadApplication(new App());
+      }catch(Exception e)
+      {
+        string filepath = new FileHelper().GetLocalFilePath("testE.txt");
+        File.WriteAllText(filepath, e.Message);
+      }
+            
         }
         public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Android.Content.PM.Permission[] grantResults)
         {

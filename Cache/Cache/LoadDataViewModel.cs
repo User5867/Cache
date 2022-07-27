@@ -25,6 +25,8 @@ namespace Cache
     private Dictionary<string, SearchCriteria> _getCriteria = new Dictionary<string, SearchCriteria>();
     public ICollection<string> Criterias { get; set; } = new List<string>();
     private string _selectedCrtiteria;
+    private string _testInfo;
+    public string TestInfo { get => _testInfo; set => SetProperty(ref _testInfo, value); }
     public string SelectedCriteria
     {
       get => _selectedCrtiteria;
@@ -54,11 +56,6 @@ namespace Cache
       InitCommands();
       ICacheManager cacheManager = CacheManager.Instance;
       _materialCache = cacheManager.GetCache<IMaterialCache>();
-      Task.Run(() =>
-      {
-        new Test().Test1();
-      });
-      
     }
 
     private void InitCommands()

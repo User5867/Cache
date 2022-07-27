@@ -23,6 +23,7 @@ namespace CacheLibary.Interfaces.CacheManager
     void CheckTablesCreated();
     SQLiteAsyncConnection GetDatabase();
     void UpdateExpiration<K>(IKey<K> key);
+    void UpdateExpirations<K>(IEnumerable<IKey<K>> key);
     Task SaveCollection<T, D, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options) where D : ICustomOptionDAO<T>, T, new();
     Task SaveCollection<T, K>(IEnumerable<KeyValuePair<IKey<K>, T>> keyValues, IOptions options);
     Task<IEnumerable<T>> GetCollection<T, K>(IEnumerable<IKey<K>> keys);
