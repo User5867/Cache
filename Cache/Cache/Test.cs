@@ -60,33 +60,33 @@ namespace Cache
     private bool _running = true;
     public async void Test3()
     {
-      List<Material> mats = new List<Material>();
-      try
-      {
-        StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(InitTes), true);
-        await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, 0, "Test Started"));
-        _stopwatch.Restart();
-        _viewModel.TestInfo = "Test Started";
-        mats.AddRange(await _materialCache.GetMaterialByMaterialNumberList(materialNumbers));
-        _viewModel.TestInfo = $"Test Returned with {mats.Count}";
-        _stopwatch.Stop();
-        await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, mats.Count, "Test Returned"));
-        file.Close();
+      //List<Material> mats = new List<Material>();
+      //try
+      //{
+      //  StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(InitTes), true);
+      //  await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, 0, "Test Started"));
+      //  _stopwatch.Restart();
+      //  _viewModel.TestInfo = "Test Started";
+      //  mats.AddRange(await _materialCache.GetMaterialByMaterialNumberList(materialNumbers));
+      //  _viewModel.TestInfo = $"Test Returned with {mats.Count}";
+      //  _stopwatch.Stop();
+      //  await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, mats.Count, "Test Returned"));
+      //  file.Close();
 
-      }
-      catch (Exception e)
-      {
+      //}
+      //catch (Exception e)
+      //{
 
-      }
-      Debug.Write(mats.Count);
-      Debug.Write(_stopwatch.Elapsed);
-      //await Task.Delay(60000);
-      //Debug.Write("Task start");
-      //_ = Task.Run(async () => { while (_running) { await TestOne(); } });
-      //_ = Task.Run(async () => { while (_running) { await TestTen(); } });
-      //_ = Task.Run(async () => { while (_running) { await TestHoundred(); } });
-      //_ = Task.Run(async () => { while (_running) { await TestThousand(); } });
-      //_ = Task.Run(async () => { while (_running) { await TestTenthousand(); } });
+      //}
+      //Debug.Write(mats.Count);
+      //Debug.Write(_stopwatch.Elapsed);
+      //await Task.Delay(120000);
+      Debug.Write("Task start");
+      _ = Task.Run(async () => { while (_running) { await TestOne(); } });
+      _ = Task.Run(async () => { while (_running) { await TestTen(); } });
+      _ = Task.Run(async () => { while (_running) { await TestHoundred(); } });
+      _ = Task.Run(async () => { while (_running) { await TestThousand(); } });
+      _ = Task.Run(async () => { while (_running) { await TestTenthousand(); } });
     }
     private Random _random = new Random();
     private string GetRandomMaterialNumber()
@@ -131,12 +131,20 @@ namespace Cache
     public async Task TestThousand()
     {
       _stopwatch4.Restart();
-      ICollection<Material> m = await _materialCache.GetMaterialByMaterialNumberList(GetRandomMaterialNumberList(1000));
-      _stopwatch4.Stop();
-      StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(ReadThousandRandomFromCache), true);
-      await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, m == null ? 0 : m.Count, _stopwatch4.Elapsed.ToString()));
-      file.Close();
-      await Task.Delay(300000);
+      try
+      {
+        ICollection<Material> m = await _materialCache.GetMaterialByMaterialNumberList(GetRandomMaterialNumberList(1000));
+        _stopwatch4.Stop();
+        StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(ReadThousandRandomFromCache), true);
+        await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, m == null ? 0 : m.Count, _stopwatch4.Elapsed.ToString()));
+        file.Close();
+        await Task.Delay(300000);
+      }
+      catch (Exception e)
+      {
+        System.Diagnostics.Debug.Write(e.Message);
+      }
+      
     }
     public async Task TestTenthousand()
     {

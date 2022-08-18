@@ -18,6 +18,7 @@ namespace Cache
       InitializeComponent();
       XF.Material.Forms.Material.Init(this);
       Current.MainPage = new MainPage();
+      bool b = System.Threading.ThreadPool.SetMaxThreads(50, 50);
     }
 
     protected override void OnStart()

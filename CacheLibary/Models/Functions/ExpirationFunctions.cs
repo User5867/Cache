@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xamarin.Forms;
+using Xamarin.Forms.Internals;
 
 namespace CacheLibary.Models.Functions
 {
@@ -95,7 +97,7 @@ namespace CacheLibary.Models.Functions
     private const string GetToDeleteValueIds = "select d.Id from Key as k Join (select * from KeyValue join (select Id from {0}) on Id = ValueId) as d on k.Id = KeyId where k.Id in ( {1} )";
     private const string DeleteKeys = "delete from Key where Id in ( {0} )";
     private const string DeleteKeyValues = "delete from KeyValue where KeyId in ( {0} )";
-    private const string DeleteDaoValues = "delete from {0} where Id in (select Id from {0} where Id in ( {1} ) and Id not in (select distinct Id from (((select Id from MaterialDAO where Id in ( {1} )) join (select * from KeyValue) on Id = KeyId) join (Select Id as kId from Key where ObjectKeyBlob like '%{2}%') on kId = KeyId)))";
+    private const string DeleteDaoValues = "delete from {0} where Id in (select Id from {0} where Id in ( {1} ) and Id not in (select distinct Id from (((select Id from MaterialDAO where Id in ( {1} )) join (select * from KeyValue) on Id = ValueId) join (Select Id as kId from Key where ObjectKeyBlob like '%{2}%') on kId = KeyId)))";
     internal static async Task DeleteExpired<D>(Type objectType) where D : ICustomOptionDAO, new()
     {
       string s = objectType.AssemblyQualifiedName;

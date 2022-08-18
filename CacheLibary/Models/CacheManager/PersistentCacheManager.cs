@@ -64,7 +64,14 @@ namespace CacheLibary.Models
       while (true)
       {
         _stopwatchExpire.Restart();
-        int count = await ExpirationFunctions.DeleteKeyAndExpiration();
+        int count = -1;
+        await Task.Run(() =>
+        {
+          lock (Instance)
+          {
+            count = ExpirationFunctions.DeleteKeyAndExpiration().Result;
+          }
+        });
         _stopwatchExpire.Stop();
         StreamWriter file = new StreamWriter(DependencyService.Get<IFileHelper>().GetLocalFilePath(DeleteTime), true);
         await file.WriteLineAsync(string.Format(WriteToFile, DateTime.UtcNow, count, _stopwatchExpire.Elapsed.ToString()));
@@ -97,11 +104,23 @@ namespace CacheLibary.Models
 
     public async Task DeleteAllExpired<D>(Type objectType) where D : ICustomOptionDAO, new()
     {
-      await ExpirationFunctions.DeleteExpired<D>(objectType);
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ExpirationFunctions.DeleteExpired<D>(objectType).Wait();
+        }
+      });
     }
     public async Task DeleteAllExpired(Type objectType)
     {
-      await ExpirationFunctions.DeleteExpired(objectType);
+      await Task.Run(() =>
+      {
+        lock (Instance)
+        {
+          ExpirationFunctions.DeleteExpired(objectType).Wait();
+        }
+      });
     }
 
     public async Task Save<T, K>(IKey<K> key, T value, IOptions options)

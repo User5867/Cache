@@ -21,17 +21,24 @@ namespace CacheLibary.Models.BaseGet
       Stopwatch s = new Stopwatch();
       s.Start();
       List<IKey<K>> unfoundKeys = key.KeyValue.AsParallel().Select(k => (IKey<K>)new Key<K>(key.KeyIdentifier, k, key.ObjectType)).ToList();
+      ConcurrentBag<IKey<K>> cfoundKeys = new ConcurrentBag<IKey<K>>();
       s.Stop();
       Debug.Write(s.Elapsed);
+      Debug.Write(unfoundKeys.Count + " All");
       _ = Parallel.ForEach(unfoundKeys.ToList(), k =>
         {
         T value = GetFromMemory(k);
         if (!ValueIsSet(value))
           return;
         cvalues.Add(value);
-        _ = unfoundKeys.Remove(k);
+          cfoundKeys.Add(k);
+        //_ = unfoundKeys.Remove(k);
       });
+      unfoundKeys = unfoundKeys.AsParallel().Where(u => !cfoundKeys.Contains(u)).ToList();
+
+      Debug.Write(unfoundKeys.Count + " mem");
       List<T> values = cvalues.ToList();
+      Debug.Write(values.Count + " mem");
       if (unfoundKeys.Count == 0)
         return values;
       IEnumerable<T> persistentValues = await GetFromPersistent(unfoundKeys);
@@ -39,6 +46,8 @@ namespace CacheLibary.Models.BaseGet
         values.AddRange(persistentValues);
       IEnumerable<IKey<K>> foundKeys = values.AsParallel().Select(v => LoadKeyFromCurrentValue(v));
       unfoundKeys = unfoundKeys.Except(foundKeys).ToList();
+      Debug.Write(unfoundKeys.Count + " per");
+      Debug.Write(values.Count + " per");
       SaveToMemory(null, values);
       UpdateExpiration(foundKeys);
       if (unfoundKeys.Count == 0)
@@ -47,36 +56,11 @@ namespace CacheLibary.Models.BaseGet
       bool offline = false;
       if (!offline)
       {
-        ICollection<T> serviceValues = null;
-
-        int kvc = unfoundKeys.Count;
-        if (false && kvc > 10000)
-        {
-          int c = kvc / 10000 + 1;
-          List<IKey<IEnumerable<K>>> splitKeys = keys.KeyValue.AsParallel().Select((value, index) => new { index, value }).GroupBy(o => o.index % c).Select(e => (IKey<IEnumerable<K>>)new Key<IEnumerable<K>>(key.KeyIdentifier, e.Select(v => v.value), key.ObjectType)).ToList();
-          Task<ICollection<T>>[] tasks = new Task<ICollection<T>>[c];
-          List<T> ret = new List<T>();
-          for (int i = 0; i < c; i++)
-          {
-            tasks[i] = Task.Run(() => GetFromService(splitKeys[i]));
-            await Task.Delay(100);
-          }
-          Task.WaitAll(tasks);
-          foreach (Task<ICollection<T>> t in tasks)
-          {
-            ret.AddRange(t.Result);
-            
-          }
-          serviceValues = ret;
-          SaveToCache(null, serviceValues);
-        }
-        else
-        {
-          serviceValues = await GetFromServiceAndSave(keys, null);
-        }
+        ICollection<T> serviceValues = await GetFromServiceAndSave(keys, null);
         if (serviceValues == null && serviceValues.Count == 0)
           return new List<T>();
         values.AddRange(serviceValues);
+        Debug.Write(values.Count + " ser");
       }
       else
       {
@@ -119,7 +103,7 @@ namespace CacheLibary.Models.BaseGet
       });
       System.Diagnostics.Debug.Write(1);
     }
-    protected virtual async void SaveToMemory(IKey<K> singleKey, T singleValue)
+    protected virtual void SaveToMemory(IKey<K> singleKey, T singleValue)
     {
       MemoryManager.Save(singleKey, singleValue, Options);
     }

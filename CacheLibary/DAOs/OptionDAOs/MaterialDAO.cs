@@ -13,28 +13,28 @@ namespace CacheLibary.DAOs.OptionDAOs
   {
     [Ignore]
     public new ICollection<MaterialProperty> PropertyList { get; set; }
-    //private string _propertyListBlob;
-    //public string PropertyListBlob
-    //{
-    //  get => _propertyListBlob;
-    //  set
-    //  {
-    //    _propertyListBlob = value;
-    //    base.PropertyList = JsonConvert.DeserializeObject<ICollection<MaterialProperty>>(PropertyListBlob);
-    //  }
-    //}
+    private string _propertyListBlob;
+    public string PropertyListBlob
+    {
+      get => _propertyListBlob;
+      set
+      {
+        _propertyListBlob = value;
+        base.PropertyList = JsonConvert.DeserializeObject<ICollection<MaterialProperty>>(PropertyListBlob);
+      }
+    }
     [Ignore]
     public new ICollection<MaterialEAN> EanList { get; set; }
-    //private string _eanListBlob;
-    //public string EanListBlob
-    //{
-    //  get => _eanListBlob;
-    //  set
-    //  {
-    //    _eanListBlob = value;
-    //    base.EanList = JsonConvert.DeserializeObject<ICollection<MaterialEAN>>(EanListBlob);
-    //  }
-    //}
+    private string _eanListBlob;
+    public string EanListBlob
+    {
+      get => _eanListBlob;
+      set
+      {
+        _eanListBlob = value;
+        base.EanList = JsonConvert.DeserializeObject<ICollection<MaterialEAN>>(EanListBlob);
+      }
+    }
     public MaterialDAO(Material material)
     {
       Price = material.Price;
@@ -51,8 +51,8 @@ namespace CacheLibary.DAOs.OptionDAOs
       PluCustomerNumber = material.PluCustomerNumber;
       PluNr = material.PluNr;
       Segment = material.Segment;
-      //EanListBlob = JsonConvert.SerializeObject(material.EanList);
-      //PropertyListBlob = JsonConvert.SerializeObject(material.PropertyList);
+      EanListBlob = JsonConvert.SerializeObject(material.EanList);
+      PropertyListBlob = JsonConvert.SerializeObject(material.PropertyList);
       UniqueId = MaterialNumber;
     }
 
@@ -65,6 +65,7 @@ namespace CacheLibary.DAOs.OptionDAOs
     public int Id { get; set; }
     [Unique]
     public string UniqueId { get; set; }
+
     public D CreateInstance<D>(Material value) where D : Material, ICustomOptionDAO<Material>
     {
       return new MaterialDAO(value) as D;

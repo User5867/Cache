@@ -15,9 +15,9 @@ namespace CacheLibary.Models
     {
       return await PersistentManager.Get<T, D, K>(key);
     }
-    protected override void SaveToPersistent(IKey<K> key, T value)
+    protected override async void SaveToPersistent(IKey<K> key, T value)
     {
-      PersistentManager.Save<T, D, K>(key, value, Options);
+      await PersistentManager.Save<T, D, K>(key, value, Options);
     }
   }
 }
